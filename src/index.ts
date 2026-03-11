@@ -8,6 +8,7 @@ const cliCommand = process.argv[2];
 const TOOL_COMMANDS = new Set([
   "reject", "constrain", "get-constraints", "search",
   "applied", "link", "update-constraint", "patterns", "stats", "list",
+  "db-path",
 ]);
 
 if (cliCommand === "init") {
@@ -27,6 +28,9 @@ if (cliCommand === "init") {
 } else if (cliCommand === "-h" || cliCommand === "--help" || cliCommand === "help") {
   const { runHelp } = await import("./cli/help.js");
   await runHelp();
+} else if (cliCommand === "clear-db") {
+  const { runClearDb } = await import("./cli/clear-db.js");
+  await runClearDb(process.argv.slice(3));
 } else if (cliCommand && TOOL_COMMANDS.has(cliCommand)) {
   const { runTool } = await import("./cli/tool.js");
   await runTool(cliCommand, process.argv.slice(3));
@@ -46,7 +50,7 @@ async function startServer(): Promise<void> {
   const { link } = await import("./tools/link.js");
   const { updateConstraint } = await import("./tools/update-constraint.js");
   const { exportConstraints } = await import("./tools/export.js");
-  const { closeDb } = await import("./db/connection.js");
+  const { getDbPath, closeDb } = await import("./db/connection.js");
   const fmt = await import("./cli/format.js");
 
   const server = new McpServer({
@@ -212,6 +216,16 @@ async function startServer(): Promise<void> {
       const { stats } = await import("./tools/stats.js");
       const s = stats();
       return { content: [{ type: "text", text: fmt.formatStatsResult(s) }] };
+    },
+  );
+
+  server.tool(
+    "db_path",
+    "Returns the absolute path to the SQLite database file this Whetstone instance is using. Useful for diagnostics and verifying which project's constraints are loaded.",
+    {},
+    async () => {
+      const dbPath = getDbPath();
+      return { content: [{ type: "text", text: `Database: ${dbPath}` }] };
     },
   );
 

@@ -2,6 +2,17 @@
 
 All notable changes to Whetstone are documented here.
 
+## [0.3.0] - 2026-03-11
+
+- Dashboard: add flywheel-driven sections (5bd617c)
+- Add right margin to dashboard badge labels (c2aab52)
+- Add clear-db command to wipe and recreate database (30bbcb5)
+- Add db-path to CLI help output (a7c707f)
+- Add db-path CLI command (393cea2)
+- Add db_path MCP tool for querying database location (1329fb7)
+- Update docs for better-sqlite3, dashboard, and list tool (bac4d10)
+
+
 ## [0.2.0] - 2026-03-11
 
 

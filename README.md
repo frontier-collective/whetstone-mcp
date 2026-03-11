@@ -135,6 +135,7 @@ The following tools are now available in your agent conversations:
 | `update_constraint` | Refine, supersede, or deprecate a constraint |
 | `export` | Export constraints as markdown or JSON |
 | `patterns` | Surface recurring rejection themes not yet encoded |
+| `list` | Browse rejections filtered by domain and encoded/unencoded status |
 | `stats` | Get rejection and constraint statistics |
 
 No special syntax required — your agent sees these as available tools and can use them naturally in conversation.
@@ -361,6 +362,8 @@ Both `whetstone` and `whetstone-mcp` work as the CLI command — they're identic
 ```bash
 whetstone init                    # set up .whetstone/ directory and database
 whetstone hook                    # install pre-push git hook (dispatcher pattern)
+whetstone dashboard               # launch web dashboard on localhost:1337
+whetstone dashboard --port 3000   # use a different port
 whetstone --help                  # show all commands and options
 ```
 
@@ -392,6 +395,10 @@ whetstone search --query error --type constraints
 # Surface unencoded rejection patterns
 whetstone patterns
 whetstone patterns --domain backend
+
+# Browse rejections
+whetstone list --domain frontend
+whetstone list --status unencoded --limit 20
 
 # View statistics
 whetstone stats
@@ -447,6 +454,6 @@ make tool-stats
 | Technology | Purpose |
 |---|---|
 | TypeScript | Server language — widest MCP SDK support |
-| sql.js | Pure JS/WASM SQLite — no native compilation, portable |
+| better-sqlite3 | Native SQLite bindings — fast, atomic writes, WAL mode |
 | @modelcontextprotocol/sdk | Standard MCP server implementation |
 | ulid | Sortable unique identifiers |
