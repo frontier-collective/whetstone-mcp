@@ -18,26 +18,29 @@ class WhetRejections extends WhetBase {
   }
 
   _template() {
-    return '<div class="filter-bar">' +
-      '<select id="rf-domain" onchange="applyRejectionFilters()"><option value="">All Domains</option></select>' +
-      '<select id="rf-encoded" onchange="applyRejectionFilters()">' +
+    var selectCls = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-2.5 text-xs font-sans focus:border-accent focus:outline-none';
+    var inputCls = selectCls + ' min-w-[180px]';
+    var btnCls = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-3 text-xs cursor-pointer font-sans hover:bg-card transition-colors';
+    return '<div class="flex gap-2.5 mb-5 flex-wrap items-center">' +
+      '<select id="rf-domain" class="' + selectCls + '" onchange="applyRejectionFilters()"><option value="">All Domains</option></select>' +
+      '<select id="rf-encoded" class="' + selectCls + '" onchange="applyRejectionFilters()">' +
         '<option value="">All</option>' +
         '<option value="no">Unencoded</option>' +
         '<option value="yes">Encoded</option>' +
       '</select>' +
-      '<select id="rf-sort" onchange="applyRejectionFilters()">' +
+      '<select id="rf-sort" class="' + selectCls + '" onchange="applyRejectionFilters()">' +
         '<option value="newest">Newest First</option>' +
         '<option value="oldest">Oldest First</option>' +
       '</select>' +
-      '<input type="text" id="rf-search" placeholder="Search rejections..." oninput="debounceRejectionSearch()">' +
-      '<button onclick="clearRejectionFilters()">Clear</button>' +
+      '<input type="text" id="rf-search" class="' + inputCls + '" placeholder="Search rejections..." oninput="debounceRejectionSearch()">' +
+      '<button class="' + btnCls + '" onclick="clearRejectionFilters()">Clear</button>' +
     '</div>' +
-    '<div class="constraints-summary" id="rejections-summary"></div>' +
-    '<section class="card" id="rej-patterns-section" style="display:none">' +
-      '<h2>Patterns <span class="section-label">\\u2014 recurring themes in unencoded rejections</span></h2>' +
+    '<div class="grid grid-cols-4 gap-3 mb-5 max-sm:grid-cols-2" id="rejections-summary"></div>' +
+    '<section class="wh-section" id="rej-patterns-section" style="display:none">' +
+      '<h2>Patterns <span class="text-[11px] text-muted font-mono">\\u2014 recurring themes in unencoded rejections</span></h2>' +
       '<div id="rej-patterns-list"></div>' +
     '</section>' +
-    '<div id="rejections-count" class="results-count"></div>' +
+    '<div id="rejections-count" class="text-xs text-muted mb-3"></div>' +
     '<div id="rejections-list"></div>';
   }
 
@@ -83,7 +86,7 @@ class WhetRejections extends WhetBase {
     var el = document.getElementById('rejections-summary');
     el.innerHTML =
       '<whet-stat-card value="' + (summary.total || 0) + '" label="Total"></whet-stat-card>' +
-      '<whet-stat-card value="' + (summary.unencoded || 0) + '" label="Unencoded" value-color="var(--accent-yellow)"></whet-stat-card>' +
+      '<whet-stat-card value="' + (summary.unencoded || 0) + '" label="Unencoded" value-color="var(--color-yellow)"></whet-stat-card>' +
       '<whet-stat-card value="' + (summary.encoded || 0) + '" label="Encoded" value-class="good"></whet-stat-card>' +
       '<whet-stat-card value="' + ((summary.by_domain || []).length) + '" label="Domains"></whet-stat-card>';
   }
@@ -99,10 +102,10 @@ class WhetRejections extends WhetBase {
     var html = '';
     for (var i = 0; i < patternsData.length; i++) {
       var p = patternsData[i];
-      html += '<div class="pattern-banner">';
-      html += '<div class="pattern-count">' + p.count + '</div>';
-      html += '<div><div class="pattern-info">' + esc(p.theme) + '</div>';
-      html += '<div class="pattern-domain">' + esc(p.domain) + ' \\u00B7 ' + p.count + ' similar rejections \\u00B7 ' + (p.sample_ids ? p.sample_ids.length : 0) + ' samples</div>';
+      html += '<div class="bg-gradient-to-br from-orange/10 to-orange/5 border border-orange rounded-lg py-3 px-4 mb-3 flex items-center gap-2.5">';
+      html += '<div class="bg-orange text-surface rounded-full w-7 h-7 flex items-center justify-center font-bold text-[13px] shrink-0">' + p.count + '</div>';
+      html += '<div><div class="text-[13px] text-primary">' + esc(p.theme) + '</div>';
+      html += '<div class="text-[11px] text-muted mt-0.5">' + esc(p.domain) + ' \\u00B7 ' + p.count + ' similar rejections \\u00B7 ' + (p.sample_ids ? p.sample_ids.length : 0) + ' samples</div>';
       html += '</div></div>';
     }
     el.innerHTML = html;
@@ -114,7 +117,7 @@ class WhetRejections extends WhetBase {
     countEl.innerHTML = rejections.length + ' rejection' + (rejections.length !== 1 ? 's' : '');
 
     if (rejections.length === 0) {
-      el.innerHTML = '<div class="empty">No rejections match the current filters</div>';
+      el.innerHTML = '<div class="wh-empty">No rejections match the current filters</div>';
       return;
     }
 
@@ -123,18 +126,18 @@ class WhetRejections extends WhetBase {
       var r = rejections[i];
       var encodedHtml = '';
       if (r.constraint_id) {
-        encodedHtml = '<div class="rejection-constraint-link">\\u2192 ' + esc(r.constraint_title || r.constraint_id) + '</div>';
+        encodedHtml = '<div class="text-[11px] text-accent font-mono">\\u2192 ' + esc(r.constraint_title || r.constraint_id) + '</div>';
       } else {
-        encodedHtml = '<span style="font-size:11px;color:var(--accent-yellow)">unencoded</span>';
+        encodedHtml = '<span class="text-[11px] text-yellow">unencoded</span>';
       }
 
-      html += '<div class="rejection-card" onclick="openRejection(\\'' + esc(r.id) + '\\')">';
-      html += '<div class="rejection-desc">' + esc(r.description) + '</div>';
-      if (r.reasoning) html += '<div class="rejection-reasoning">' + esc(r.reasoning) + '</div>';
-      html += '<div class="constraint-meta">';
+      html += '<div class="wh-card" onclick="openRejection(\\'' + esc(r.id) + '\\')">';
+      html += '<div class="text-sm font-medium text-primary mb-1.5">' + esc(r.description) + '</div>';
+      if (r.reasoning) html += '<div class="text-[13px] text-muted leading-normal line-clamp-2 mb-2">' + esc(r.reasoning) + '</div>';
+      html += '<div class="flex flex-wrap gap-1.5 items-center">';
       html += domainBadge(r.domain) + ' ' + encodedHtml;
       html += '</div>';
-      html += '<div class="constraint-stats">' + timeAgo(r.created_at) + '</div>';
+      html += '<div class="mt-1.5 text-[11px] font-mono text-muted">' + timeAgo(r.created_at) + '</div>';
       html += '</div>';
     }
     el.innerHTML = html;
@@ -153,7 +156,7 @@ class WhetRejections extends WhetBase {
       this._renderPatterns(results[2]);
       this._renderList(results[0]);
     } catch(err) {
-      document.getElementById('rejections-list').innerHTML = '<div class="empty">Error: ' + esc(err.message) + '</div>';
+      document.getElementById('rejections-list').innerHTML = '<div class="wh-empty">Error: ' + esc(err.message) + '</div>';
     }
   }
 }

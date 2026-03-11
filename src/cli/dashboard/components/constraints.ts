@@ -8,7 +8,6 @@ class WhetConstraints extends WhetBase {
     super.connectedCallback();
     this._searchTimer = null;
     this.innerHTML = this._template();
-    this._wireEvents();
 
     // Expose global wrappers for backward compat with onclick handlers
     var self = this;
@@ -19,37 +18,52 @@ class WhetConstraints extends WhetBase {
   }
 
   _template() {
-    return '<div class="filter-bar" id="constraints-filters">' +
-      '<select id="cf-domain" onchange="applyConstraintFilters()"><option value="">All Domains</option></select>' +
-      '<select id="cf-severity" onchange="applyConstraintFilters()">' +
+    var selectCls = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-2.5 text-xs font-sans focus:border-accent focus:outline-none';
+    var inputCls = selectCls + ' min-w-[180px]';
+    var btnCls = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-3 text-xs cursor-pointer font-sans hover:bg-card transition-colors';
+    return '<div class="flex gap-2.5 mb-5 flex-wrap items-center">' +
+      '<select id="cf-domain" class="' + selectCls + '" onchange="applyConstraintFilters()"><option value="">All Domains</option></select>' +
+      '<select id="cf-severity" class="' + selectCls + '" onchange="applyConstraintFilters()">' +
         '<option value="">All Severities</option>' +
         '<option value="critical">Critical</option>' +
         '<option value="important">Important</option>' +
         '<option value="preference">Preference</option>' +
       '</select>' +
-      '<select id="cf-status" onchange="applyConstraintFilters()">' +
+      '<select id="cf-status" class="' + selectCls + '" onchange="applyConstraintFilters()">' +
         '<option value="">All Statuses</option>' +
         '<option value="active">Active</option>' +
         '<option value="deprecated">Deprecated</option>' +
         '<option value="superseded">Superseded</option>' +
       '</select>' +
-      '<select id="cf-category" onchange="applyConstraintFilters()"><option value="">All Categories</option></select>' +
-      '<select id="cf-sort" onchange="applyConstraintFilters()">' +
+      '<select id="cf-category" class="' + selectCls + '" onchange="applyConstraintFilters()"><option value="">All Categories</option></select>' +
+      '<select id="cf-sort" class="' + selectCls + '" onchange="applyConstraintFilters()">' +
         '<option value="newest">Newest First</option>' +
         '<option value="applied">Most Applied</option>' +
         '<option value="severity">Severity</option>' +
         '<option value="alpha">Alphabetical</option>' +
       '</select>' +
-      '<input type="text" id="cf-search" placeholder="Search constraints..." oninput="debounceConstraintSearch()">' +
-      '<button onclick="clearConstraintFilters()">Clear</button>' +
+      '<input type="text" id="cf-search" class="' + inputCls + '" placeholder="Search constraints..." oninput="debounceConstraintSearch()">' +
+      '<button class="' + btnCls + '" onclick="clearConstraintFilters()">Clear</button>' +
     '</div>' +
-    '<div class="constraints-summary" id="constraints-summary"></div>' +
-    '<div id="constraints-count" class="results-count"></div>' +
+    '<div class="grid grid-cols-7 gap-3 mb-5 max-[900px]:grid-cols-4 max-sm:grid-cols-2" id="constraints-summary"></div>' +
+    '<div id="constraints-count" class="text-xs text-muted mb-3"></div>' +
     '<div id="constraints-list"></div>';
   }
 
-  _wireEvents() {
-    // Events are wired via onclick/oninput attributes pointing to global wrappers
+  _debounceSearch() {
+    var self = this;
+    if (this._searchTimer) clearTimeout(this._searchTimer);
+    this._searchTimer = setTimeout(function() { self.load(); }, 300);
+  }
+
+  _clearFilters() {
+    document.getElementById('cf-domain').value = '';
+    document.getElementById('cf-severity').value = '';
+    document.getElementById('cf-status').value = '';
+    document.getElementById('cf-category').value = '';
+    document.getElementById('cf-sort').value = 'newest';
+    document.getElementById('cf-search').value = '';
+    this.load();
   }
 
   _buildFilterParams() {
@@ -67,22 +81,6 @@ class WhetConstraints extends WhetBase {
     if (sort) parts.push('sort=' + encodeURIComponent(sort));
     if (q) parts.push('q=' + encodeURIComponent(q));
     return parts.length > 0 ? '?' + parts.join('&') : '';
-  }
-
-  _debounceSearch() {
-    var self = this;
-    if (this._searchTimer) clearTimeout(this._searchTimer);
-    this._searchTimer = setTimeout(function() { self.load(); }, 300);
-  }
-
-  _clearFilters() {
-    document.getElementById('cf-domain').value = '';
-    document.getElementById('cf-severity').value = '';
-    document.getElementById('cf-status').value = '';
-    document.getElementById('cf-category').value = '';
-    document.getElementById('cf-sort').value = 'newest';
-    document.getElementById('cf-search').value = '';
-    this.load();
   }
 
   _populateDropdowns(summary) {
@@ -120,9 +118,9 @@ class WhetConstraints extends WhetBase {
       '<whet-stat-card value="' + (statusMap.active || 0) + '" label="Active" value-class="good"></whet-stat-card>' +
       '<whet-stat-card value="' + (statusMap.deprecated || 0) + '" label="Deprecated"></whet-stat-card>' +
       '<whet-stat-card value="' + (statusMap.superseded || 0) + '" label="Superseded"></whet-stat-card>' +
-      '<whet-stat-card value="' + (sevMap.critical || 0) + '" label="Critical" value-color="var(--accent-red)"></whet-stat-card>' +
-      '<whet-stat-card value="' + (sevMap.important || 0) + '" label="Important" value-color="var(--accent-yellow)"></whet-stat-card>' +
-      '<whet-stat-card value="' + (sevMap.preference || 0) + '" label="Preference" value-color="var(--accent-purple)"></whet-stat-card>';
+      '<whet-stat-card value="' + (sevMap.critical || 0) + '" label="Critical" value-color="var(--color-red)"></whet-stat-card>' +
+      '<whet-stat-card value="' + (sevMap.important || 0) + '" label="Important" value-color="var(--color-yellow)"></whet-stat-card>' +
+      '<whet-stat-card value="' + (sevMap.preference || 0) + '" label="Preference" value-color="var(--color-purple)"></whet-stat-card>';
   }
 
   _renderList(constraints) {
@@ -131,7 +129,7 @@ class WhetConstraints extends WhetBase {
     countEl.innerHTML = constraints.length + ' constraint' + (constraints.length !== 1 ? 's' : '');
 
     if (constraints.length === 0) {
-      el.innerHTML = '<div class="empty">No constraints match the current filters</div>';
+      el.innerHTML = '<div class="wh-empty">No constraints match the current filters</div>';
       return;
     }
 
@@ -144,7 +142,7 @@ class WhetConstraints extends WhetBase {
       var staleIndicator = '';
       if (c.status === 'active' && c.times_applied === 0) {
         var ageMs = Date.now() - new Date(c.created_at).getTime();
-        if (ageMs > 7 * 86400000) staleIndicator = ' \\u00B7 <span style="color:var(--accent-yellow)" title="Never applied, older than 7 days">stale</span>';
+        if (ageMs > 7 * 86400000) staleIndicator = ' \\u00B7 <span class="text-yellow" title="Never applied, older than 7 days">stale</span>';
       }
 
       // Parse tags
@@ -152,18 +150,18 @@ class WhetConstraints extends WhetBase {
       try {
         var tags = c.tags ? JSON.parse(c.tags) : null;
         if (tags && tags.length > 0) {
-          for (var t = 0; t < tags.length; t++) tagsHtml += '<span class="tag">' + esc(tags[t]) + '</span>';
+          for (var t = 0; t < tags.length; t++) tagsHtml += '<span class="wh-tag">' + esc(tags[t]) + '</span>';
         }
       } catch(e) {}
 
-      html += '<div class="constraint-card" onclick="openConstraint(\\'' + esc(c.id) + '\\')">';
-      html += '<div class="constraint-title">' + esc(c.title) + '</div>';
-      html += '<div class="constraint-rule">' + esc(c.rule) + '</div>';
-      html += '<div class="constraint-meta">';
+      html += '<div class="wh-card" onclick="openConstraint(\\'' + esc(c.id) + '\\')">';
+      html += '<div class="text-sm font-medium text-primary mb-1.5">' + esc(c.title) + '</div>';
+      html += '<div class="text-[13px] text-muted leading-normal line-clamp-2 mb-2">' + esc(c.rule) + '</div>';
+      html += '<div class="flex flex-wrap gap-1.5 items-center">';
       html += domainBadge(c.domain) + severityBadge(c.severity) + '<whet-badge text="' + esc(c.category) + '"></whet-badge>' + statusBadge;
       if (tagsHtml) html += tagsHtml;
       html += '</div>';
-      html += '<div class="constraint-stats">';
+      html += '<div class="mt-1.5 text-[11px] font-mono text-muted">';
       html += appliedText + ' \\u00B7 ' + linkedCount + ' rejection' + (linkedCount !== 1 ? 's' : '') + ' \\u00B7 ' + timeAgo(c.created_at) + staleIndicator;
       html += '</div>';
       html += '</div>';
@@ -182,7 +180,7 @@ class WhetConstraints extends WhetBase {
       this._renderSummary(results[1]);
       this._renderList(results[0]);
     } catch(err) {
-      document.getElementById('constraints-list').innerHTML = '<div class="empty">Error: ' + esc(err.message) + '</div>';
+      document.getElementById('constraints-list').innerHTML = '<div class="wh-empty">Error: ' + esc(err.message) + '</div>';
     }
   }
 }
