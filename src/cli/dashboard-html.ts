@@ -119,6 +119,16 @@ button.active { border-color: var(--accent); color: var(--accent); }
   letter-spacing: 0.5px;
 }
 
+.stat-card .delta {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.stat-card .delta.positive { color: var(--accent-green); }
+.stat-card .delta.negative { color: var(--accent-red); }
+
 .stat-card.warn .value { color: var(--accent-yellow); }
 .stat-card.good .value { color: var(--accent-green); }
 
@@ -338,6 +348,105 @@ details .detail-body {
   background: none;
 }
 
+.pattern-cluster {
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border-left: 3px solid var(--accent-orange);
+}
+
+.pattern-cluster .pattern-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.pattern-cluster .pattern-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent-orange);
+  font-weight: 600;
+}
+
+.pattern-cluster .pattern-theme {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.pattern-cluster .pattern-examples {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.pattern-cluster .pattern-examples div {
+  padding: 2px 0;
+}
+
+.pattern-cluster .pattern-examples div::before {
+  content: '\\2022 ';
+  color: var(--text-secondary);
+}
+
+.domain-gap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.domain-gap:last-child { border-bottom: none; }
+
+.domain-gap .gap-domain {
+  width: 120px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+
+.domain-gap .gap-bar {
+  flex: 1;
+  height: 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.domain-gap .gap-bar-fill {
+  height: 100%;
+  background: var(--accent-red);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.domain-gap .gap-stats {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.graduation-rule {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 4px;
+  padding-left: 4px;
+  border-left: 2px solid var(--accent-green);
+  line-height: 1.4;
+}
+
+.section-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+}
+
 footer {
   padding: 16px 24px;
   border-top: 1px solid var(--border);
@@ -401,10 +510,26 @@ const BODY = `
   </div>
 </section>
 
+<section class="card" id="patterns-section" style="display:none">
+  <h2>Encode These Next <span class="section-label">— recurring rejection patterns without constraints</span></h2>
+  <div id="patterns-list"></div>
+</section>
+
 <section class="two-col">
-  <div class="card">
-    <h2>Stale Constraints <span class="count-badge">&gt; 7 days, 0 applications</span></h2>
-    <div id="stale-list"></div>
+  <div class="card" id="domain-gaps-section" style="display:none">
+    <h2>Domain Gaps <span class="section-label">— taste being lost</span></h2>
+    <div id="domain-gaps-list"></div>
+  </div>
+  <div class="card" id="graduation-section" style="display:none">
+    <h2>Ready to Graduate <span class="section-label">— move to CLAUDE.md</span></h2>
+    <div id="graduation-list"></div>
+  </div>
+</section>
+
+<section class="two-col">
+  <div class="card" id="dead-section" style="display:none">
+    <h2>Fading Constraints <span class="section-label">— applied before, silent now</span></h2>
+    <div id="dead-list"></div>
   </div>
   <div class="card">
     <h2>Elevation Candidates</h2>
@@ -450,18 +575,26 @@ async function fetchJson(path) {
   return res.json();
 }
 
+function deltaHtml(n, label) {
+  if (!n) return '';
+  var cls = n > 0 ? 'positive' : 'negative';
+  var sign = n > 0 ? '+' : '';
+  return '<div class="delta ' + cls + '">' + sign + n + ' ' + label + '</div>';
+}
+
 function renderStatsCards(s) {
   var el = document.getElementById('stats-cards');
   var unencodedClass = s.unencoded_rejections > 0 ? ' warn' : '';
   var encoded = s.total_rejections - s.unencoded_rejections;
   var coveragePct = s.total_rejections > 0 ? Math.round((encoded / s.total_rejections) * 100) : 0;
   var coverageClass = coveragePct >= 80 ? ' good' : coveragePct >= 50 ? '' : ' warn';
+  var wd = s.week_delta || {};
   el.innerHTML =
-    '<div class="stat-card"><div class="value">' + s.total_rejections + '</div><div class="label">Rejections</div></div>' +
-    '<div class="stat-card"><div class="value">' + s.total_constraints + '</div><div class="label">Constraints</div></div>' +
+    '<div class="stat-card"><div class="value">' + s.total_rejections + '</div><div class="label">Rejections</div>' + deltaHtml(wd.rejections, 'this week') + '</div>' +
+    '<div class="stat-card"><div class="value">' + s.total_constraints + '</div><div class="label">Constraints</div>' + deltaHtml(wd.constraints, 'this week') + '</div>' +
     '<div class="stat-card good"><div class="value">' + s.active_constraints + '</div><div class="label">Active</div></div>' +
     '<div class="stat-card' + unencodedClass + '"><div class="value">' + s.unencoded_rejections + '</div><div class="label">Unencoded</div></div>' +
-    '<div class="stat-card' + coverageClass + '"><div class="value">' + coveragePct + '%</div><div class="label">Coverage</div></div>';
+    '<div class="stat-card' + coverageClass + '"><div class="value">' + coveragePct + '%</div><div class="label">Coverage</div>' + deltaHtml(wd.encoded, 'encoded this week') + '</div>';
 }
 
 function renderDomainBars(s) {
@@ -648,17 +781,92 @@ function renderRecentlyEncoded(s) {
   el.innerHTML = html;
 }
 
-function renderStale(s) {
-  var el = document.getElementById('stale-list');
-  var items = s.stale_constraints || [];
-  if (items.length === 0) {
-    el.innerHTML = '<div class="empty">No stale constraints</div>';
+function renderPatterns(patternsData) {
+  var section = document.getElementById('patterns-section');
+  var el = document.getElementById('patterns-list');
+  if (!patternsData || patternsData.length === 0) {
+    section.style.display = 'none';
     return;
   }
+  section.style.display = '';
+  var html = '';
+  for (var i = 0; i < Math.min(patternsData.length, 5); i++) {
+    var p = patternsData[i];
+    html += '<div class="pattern-cluster">' +
+      '<div class="pattern-header">' +
+      domainBadge(p.domain) +
+      '<span class="pattern-count">' + p.count + ' similar rejections</span>' +
+      '</div>' +
+      '<div class="pattern-theme">Keywords: ' + esc(p.theme) + '</div>' +
+      '<div class="pattern-examples">';
+    for (var j = 0; j < Math.min(p.descriptions.length, 3); j++) {
+      html += '<div>' + esc(p.descriptions[j]) + '</div>';
+    }
+    if (p.descriptions.length > 3) {
+      html += '<div style="color:var(--text-secondary);font-style:italic">+' + (p.descriptions.length - 3) + ' more</div>';
+    }
+    html += '</div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderGraduation(s) {
+  var section = document.getElementById('graduation-section');
+  var el = document.getElementById('graduation-list');
+  var items = s.graduation_candidates || [];
+  if (items.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
   var html = '';
   for (var i = 0; i < items.length; i++) {
     var c = items[i];
-    html += renderConstraintDetail(c, '<span>' + timeAgo(c.created_at) + '</span>');
+    html += '<div class="list-item">' +
+      '<div class="title">' + esc(c.title) + '</div>' +
+      '<div class="graduation-rule">' + esc(c.rule) + '</div>' +
+      '<div class="meta">' + domainBadge(c.domain) + severityBadge(c.severity) +
+      '<span>Applied ' + c.times_applied + 'x</span></div></div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderDomainGaps(s) {
+  var section = document.getElementById('domain-gaps-section');
+  var el = document.getElementById('domain-gaps-list');
+  var items = s.domain_gaps || [];
+  if (items.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    var d = items[i];
+    // Bar width = % of unencoded (inverted coverage)
+    var gapPct = 100 - d.coverage_pct;
+    html += '<div class="domain-gap">' +
+      '<div class="gap-domain">' + esc(d.domain) + '</div>' +
+      '<div class="gap-bar"><div class="gap-bar-fill" style="width:' + gapPct + '%"></div></div>' +
+      '<div class="gap-stats">' + d.unencoded + ' unencoded / ' + d.coverage_pct + '% covered</div>' +
+      '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderDead(s) {
+  var section = document.getElementById('dead-section');
+  var el = document.getElementById('dead-list');
+  var items = s.dead_constraints || [];
+  if (items.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = '';
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    var c = items[i];
+    html += renderConstraintDetail(c, '<span>Applied ' + c.times_applied + 'x · last ' + timeAgo(c.last_applied_at) + '</span>');
   }
   el.innerHTML = html;
 }
@@ -684,16 +892,21 @@ async function refresh() {
   try {
     var results = await Promise.all([
       fetchJson('/api/stats'),
-      fetchJson('/api/list?status=unencoded&limit=30')
+      fetchJson('/api/list?status=unencoded&limit=30'),
+      fetchJson('/api/patterns')
     ]);
     var stats = results[0];
     var listResult = results[1];
+    var patternsData = results[2];
     renderStatsCards(stats);
     renderDomainBars(stats);
     renderMostApplied(stats);
+    renderPatterns(patternsData);
     renderUnencoded(listResult);
     renderRecentlyEncoded(stats);
-    renderStale(stats);
+    renderDomainGaps(stats);
+    renderGraduation(stats);
+    renderDead(stats);
     renderElevation(stats);
     statusEl.textContent = 'Updated ' + new Date().toLocaleTimeString();
   } catch (err) {
