@@ -75,6 +75,33 @@ export async function runDashboard(args: string[]): Promise<void> {
             ? parseInt(url.searchParams.get("limit")!, 10)
             : undefined,
         }));
+      } else if (path === "/api/rejections/all") {
+        const db = getDb();
+        const conditions: string[] = [];
+        const params: string[] = [];
+        const domain = url.searchParams.get("domain");
+        const encoded = url.searchParams.get("encoded");
+        const q = url.searchParams.get("q");
+        if (domain) { conditions.push("r.domain = ?"); params.push(domain); }
+        if (encoded === "yes") { conditions.push("r.constraint_id IS NOT NULL"); }
+        else if (encoded === "no") { conditions.push("r.constraint_id IS NULL"); }
+        if (q) { conditions.push("(r.description LIKE ? OR r.reasoning LIKE ? OR r.raw_output LIKE ?)"); params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+        const where = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
+        const sortParam = url.searchParams.get("sort") ?? "newest";
+        const orderMap: Record<string, string> = {
+          newest: "r.created_at DESC",
+          oldest: "r.created_at ASC",
+        };
+        const order = orderMap[sortParam] ?? orderMap.newest;
+        const rows = db.prepare(`SELECT r.*, c.title as constraint_title FROM rejections r LEFT JOIN constraints c ON r.constraint_id = c.id ${where} ORDER BY ${order}`).all(...params);
+        sendJson(res, 200, rows);
+      } else if (path === "/api/rejections/summary") {
+        const db = getDb();
+        const total = db.prepare("SELECT COUNT(*) as count FROM rejections").get() as { count: number };
+        const encoded = db.prepare("SELECT COUNT(*) as count FROM rejections WHERE constraint_id IS NOT NULL").get() as { count: number };
+        const unencoded = db.prepare("SELECT COUNT(*) as count FROM rejections WHERE constraint_id IS NULL").get() as { count: number };
+        const byDomain = db.prepare("SELECT domain, COUNT(*) as count FROM rejections GROUP BY domain ORDER BY count DESC").all();
+        sendJson(res, 200, { total: total.count, encoded: encoded.count, unencoded: unencoded.count, by_domain: byDomain });
       } else if (path === "/api/constraints/all") {
         const db = getDb();
         const conditions: string[] = [];
