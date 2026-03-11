@@ -1,9 +1,23 @@
 // Dashboard HTML assembly.
-// Phase 1: Passthrough — imports from the legacy dashboard-html.ts.
-// Future phases will replace this with Lit component assembly.
+// Injects Lit CDN + web component definitions into the legacy HTML.
 
 import { getDashboardHtml as getLegacyHtml } from "../dashboard-html.js";
+import { BASE_COMPONENT } from "./components/base.js";
+import { STAT_CARD } from "./components/stat-card.js";
+import { BADGE } from "./components/badge.js";
+
+const LIT_CDN = "https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js";
+
+const COMPONENT_SCRIPT = `<script type="module">
+import { LitElement, html, css } from '${LIT_CDN}';
+
+${BASE_COMPONENT}
+${STAT_CARD}
+${BADGE}
+</script>`;
 
 export function getDashboardHtml(version: string): string {
-  return getLegacyHtml(version);
+  const legacy = getLegacyHtml(version);
+  // Inject component definitions before </head> so they're defined before body renders
+  return legacy.replace("</head>", COMPONENT_SCRIPT + "\n</head>");
 }

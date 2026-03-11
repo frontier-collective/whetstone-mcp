@@ -998,11 +998,11 @@ function timeAgo(iso) {
 }
 
 function severityBadge(sev) {
-  return '<span class="badge ' + esc(sev) + '">' + esc(sev) + '</span>';
+  return '<whet-badge text="' + esc(sev) + '" variant="' + esc(sev) + '"></whet-badge>';
 }
 
 function domainBadge(domain) {
-  return '<span class="badge">' + esc(domain) + '</span>';
+  return '<whet-badge text="' + esc(domain) + '"></whet-badge>';
 }
 
 async function fetchJson(path) {
@@ -1118,7 +1118,7 @@ async function openConstraint(id) {
     var c = await fetchJson('/api/constraint/' + encodeURIComponent(id));
     var html = '<div class="modal-header"><div><div class="modal-type">Constraint</div><h2>' + esc(c.title) + '</h2></div><button class="modal-close" onclick="closeModal()">\\u00D7</button></div>';
     html += '<div class="modal-body">';
-    html += '<div class="modal-badges">' + domainBadge(c.domain) + severityBadge(c.severity) + '<span class="badge">' + esc(c.category) + '</span><span class="badge">' + esc(c.status) + '</span></div>';
+    html += '<div class="modal-badges">' + domainBadge(c.domain) + severityBadge(c.severity) + '<whet-badge text="' + esc(c.category) + '"></whet-badge><whet-badge text="' + esc(c.status) + '"></whet-badge></div>';
     html += modalField('Rule', c.rule);
     html += modalField('Reasoning', c.reasoning, { showEmpty: true });
     html += modalField('Bad Example', c.rejected_example, { code: true, showEmpty: true });
@@ -1174,28 +1174,27 @@ async function openConstraint(id) {
   }
 }
 
-function deltaHtml(n, label) {
+function deltaText(n, label) {
   if (!n) return '';
-  var cls = n > 0 ? 'positive' : 'negative';
   var sign = n > 0 ? '+' : '';
-  return '<div class="delta ' + cls + '">' + sign + n + ' ' + label + '</div>';
+  return sign + n + ' ' + label;
 }
 
 function renderStatsCards(s) {
   var el = document.getElementById('stats-cards');
-  var unencodedClass = s.unencoded_rejections > 0 ? ' warn' : '';
+  var unencodedClass = s.unencoded_rejections > 0 ? 'warn' : '';
   var encoded = s.total_rejections - s.unencoded_rejections;
   var coveragePct = s.total_rejections > 0 ? Math.round((encoded / s.total_rejections) * 100) : 0;
-  var coverageClass = coveragePct >= 80 ? ' good' : coveragePct >= 50 ? '' : ' warn';
+  var coverageClass = coveragePct >= 80 ? 'good' : coveragePct >= 50 ? '' : 'warn';
   var wd = s.week_delta || {};
   var domainCount = (s.rejections_by_domain || []).length;
   el.innerHTML =
-    '<div class="stat-card"><div class="value">' + s.total_rejections + '</div><div class="label">Rejections</div>' + deltaHtml(wd.rejections, 'this week') + '</div>' +
-    '<div class="stat-card"><div class="value">' + s.total_constraints + '</div><div class="label">Constraints</div>' + deltaHtml(wd.constraints, 'this week') + '</div>' +
-    '<div class="stat-card good"><div class="value">' + s.active_constraints + '</div><div class="label">Active</div></div>' +
-    '<div class="stat-card' + unencodedClass + '"><div class="value">' + s.unencoded_rejections + '</div><div class="label">Unencoded</div></div>' +
-    '<div class="stat-card' + coverageClass + '"><div class="value">' + coveragePct + '%</div><div class="label">Coverage</div>' + deltaHtml(wd.encoded, 'encoded this week') + '</div>' +
-    '<div class="stat-card"><div class="value">' + domainCount + '</div><div class="label">Domains</div></div>';
+    '<whet-stat-card value="' + s.total_rejections + '" label="Rejections" delta="' + esc(deltaText(wd.rejections, 'this week')) + '"></whet-stat-card>' +
+    '<whet-stat-card value="' + s.total_constraints + '" label="Constraints" delta="' + esc(deltaText(wd.constraints, 'this week')) + '"></whet-stat-card>' +
+    '<whet-stat-card value="' + s.active_constraints + '" label="Active" value-class="good"></whet-stat-card>' +
+    '<whet-stat-card value="' + s.unencoded_rejections + '" label="Unencoded"' + (unencodedClass ? ' value-class="' + unencodedClass + '"' : '') + '></whet-stat-card>' +
+    '<whet-stat-card value="' + coveragePct + '%" label="Coverage"' + (coverageClass ? ' value-class="' + coverageClass + '"' : '') + ' delta="' + esc(deltaText(wd.encoded, 'encoded this week')) + '"></whet-stat-card>' +
+    '<whet-stat-card value="' + domainCount + '" label="Domains"></whet-stat-card>';
 }
 
 function renderDomainBars(s) {
@@ -1586,13 +1585,13 @@ function renderConstraintsSummary(summary) {
   for (var j = 0; j < bySev.length; j++) sevMap[bySev[j].severity] = bySev[j].count;
 
   el.innerHTML =
-    '<div class="stat-card"><div class="value">' + total + '</div><div class="label">Total</div></div>' +
-    '<div class="stat-card good"><div class="value">' + (statusMap.active || 0) + '</div><div class="label">Active</div></div>' +
-    '<div class="stat-card"><div class="value">' + (statusMap.deprecated || 0) + '</div><div class="label">Deprecated</div></div>' +
-    '<div class="stat-card"><div class="value">' + (statusMap.superseded || 0) + '</div><div class="label">Superseded</div></div>' +
-    '<div class="stat-card"><div class="value" style="color:var(--accent-red)">' + (sevMap.critical || 0) + '</div><div class="label">Critical</div></div>' +
-    '<div class="stat-card"><div class="value" style="color:var(--accent-yellow)">' + (sevMap.important || 0) + '</div><div class="label">Important</div></div>' +
-    '<div class="stat-card"><div class="value" style="color:var(--accent-purple)">' + (sevMap.preference || 0) + '</div><div class="label">Preference</div></div>';
+    '<whet-stat-card value="' + total + '" label="Total"></whet-stat-card>' +
+    '<whet-stat-card value="' + (statusMap.active || 0) + '" label="Active" value-class="good"></whet-stat-card>' +
+    '<whet-stat-card value="' + (statusMap.deprecated || 0) + '" label="Deprecated"></whet-stat-card>' +
+    '<whet-stat-card value="' + (statusMap.superseded || 0) + '" label="Superseded"></whet-stat-card>' +
+    '<whet-stat-card value="' + (sevMap.critical || 0) + '" label="Critical" value-color="var(--accent-red)"></whet-stat-card>' +
+    '<whet-stat-card value="' + (sevMap.important || 0) + '" label="Important" value-color="var(--accent-yellow)"></whet-stat-card>' +
+    '<whet-stat-card value="' + (sevMap.preference || 0) + '" label="Preference" value-color="var(--accent-purple)"></whet-stat-card>';
 }
 
 function renderConstraintsList(constraints) {
@@ -1608,7 +1607,7 @@ function renderConstraintsList(constraints) {
   var html = '';
   for (var i = 0; i < constraints.length; i++) {
     var c = constraints[i];
-    var statusBadge = c.status !== 'active' ? '<span class="badge">' + esc(c.status) + '</span>' : '';
+    var statusBadge = c.status !== 'active' ? '<whet-badge text="' + esc(c.status) + '"></whet-badge>' : '';
     var linkedCount = c.linked_rejection_count || 0;
     var appliedText = c.times_applied > 0 ? 'Applied ' + c.times_applied + 'x' : 'Never applied';
     var staleIndicator = '';
@@ -1630,7 +1629,7 @@ function renderConstraintsList(constraints) {
     html += '<div class="constraint-title">' + esc(c.title) + '</div>';
     html += '<div class="constraint-rule">' + esc(c.rule) + '</div>';
     html += '<div class="constraint-meta">';
-    html += domainBadge(c.domain) + severityBadge(c.severity) + '<span class="badge">' + esc(c.category) + '</span>' + statusBadge;
+    html += domainBadge(c.domain) + severityBadge(c.severity) + '<whet-badge text="' + esc(c.category) + '"></whet-badge>' + statusBadge;
     if (tagsHtml) html += tagsHtml;
     html += '</div>';
     html += '<div class="constraint-stats">';
@@ -1702,10 +1701,10 @@ function populateRejectionDropdowns(summary) {
 function renderRejectionsSummary(summary) {
   var el = document.getElementById('rejections-summary');
   el.innerHTML =
-    '<div class="stat-card"><div class="value">' + (summary.total || 0) + '</div><div class="label">Total</div></div>' +
-    '<div class="stat-card"><div class="value" style="color:var(--accent-yellow)">' + (summary.unencoded || 0) + '</div><div class="label">Unencoded</div></div>' +
-    '<div class="stat-card good"><div class="value">' + (summary.encoded || 0) + '</div><div class="label">Encoded</div></div>' +
-    '<div class="stat-card"><div class="value">' + ((summary.by_domain || []).length) + '</div><div class="label">Domains</div></div>';
+    '<whet-stat-card value="' + (summary.total || 0) + '" label="Total"></whet-stat-card>' +
+    '<whet-stat-card value="' + (summary.unencoded || 0) + '" label="Unencoded" value-color="var(--accent-yellow)"></whet-stat-card>' +
+    '<whet-stat-card value="' + (summary.encoded || 0) + '" label="Encoded" value-class="good"></whet-stat-card>' +
+    '<whet-stat-card value="' + ((summary.by_domain || []).length) + '" label="Domains"></whet-stat-card>';
 }
 
 function renderRejectionPatterns(patternsData) {
