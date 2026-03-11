@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "http";
 import { exec } from "child_process";
 import { platform } from "os";
-import { getDashboardHtml } from "./dashboard-html.js";
+import { getDashboardHtml } from "./dashboard/index.js";
 
 const DEFAULT_PORT = 1337;
 
@@ -60,6 +60,7 @@ export async function runDashboard(args: string[]): Promise<void> {
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url ?? "/", `http://localhost:${port}`);
     const path = url.pathname;
+    const method = req.method ?? "GET";
 
     try {
       if (path === "/" || path === "") {
@@ -74,6 +75,66 @@ export async function runDashboard(args: string[]): Promise<void> {
             ? parseInt(url.searchParams.get("limit")!, 10)
             : undefined,
         }));
+      } else if (path === "/api/rejections/all") {
+        const db = getDb();
+        const conditions: string[] = [];
+        const params: string[] = [];
+        const domain = url.searchParams.get("domain");
+        const encoded = url.searchParams.get("encoded");
+        const q = url.searchParams.get("q");
+        if (domain) { conditions.push("r.domain = ?"); params.push(domain); }
+        if (encoded === "yes") { conditions.push("r.constraint_id IS NOT NULL"); }
+        else if (encoded === "no") { conditions.push("r.constraint_id IS NULL"); }
+        if (q) { conditions.push("(r.description LIKE ? OR r.reasoning LIKE ? OR r.raw_output LIKE ?)"); params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+        const where = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
+        const sortParam = url.searchParams.get("sort") ?? "newest";
+        const orderMap: Record<string, string> = {
+          newest: "r.created_at DESC",
+          oldest: "r.created_at ASC",
+        };
+        const order = orderMap[sortParam] ?? orderMap.newest;
+        const rows = db.prepare(`SELECT r.*, c.title as constraint_title FROM rejections r LEFT JOIN constraints c ON r.constraint_id = c.id ${where} ORDER BY ${order}`).all(...params);
+        sendJson(res, 200, rows);
+      } else if (path === "/api/rejections/summary") {
+        const db = getDb();
+        const total = db.prepare("SELECT COUNT(*) as count FROM rejections").get() as { count: number };
+        const encoded = db.prepare("SELECT COUNT(*) as count FROM rejections WHERE constraint_id IS NOT NULL").get() as { count: number };
+        const unencoded = db.prepare("SELECT COUNT(*) as count FROM rejections WHERE constraint_id IS NULL").get() as { count: number };
+        const byDomain = db.prepare("SELECT domain, COUNT(*) as count FROM rejections GROUP BY domain ORDER BY count DESC").all();
+        sendJson(res, 200, { total: total.count, encoded: encoded.count, unencoded: unencoded.count, by_domain: byDomain });
+      } else if (path === "/api/constraints/all") {
+        const db = getDb();
+        const conditions: string[] = [];
+        const params: string[] = [];
+        const domain = url.searchParams.get("domain");
+        const severity = url.searchParams.get("severity");
+        const status = url.searchParams.get("status");
+        const category = url.searchParams.get("category");
+        const q = url.searchParams.get("q");
+        if (domain) { conditions.push("c.domain = ?"); params.push(domain); }
+        if (severity) { conditions.push("c.severity = ?"); params.push(severity); }
+        if (status) { conditions.push("c.status = ?"); params.push(status); }
+        if (category) { conditions.push("c.category = ?"); params.push(category); }
+        if (q) { conditions.push("(c.title LIKE ? OR c.rule LIKE ? OR c.tags LIKE ?)"); params.push(`%${q}%`, `%${q}%`, `%${q}%`); }
+        const where = conditions.length > 0 ? "WHERE " + conditions.join(" AND ") : "";
+        const sortParam = url.searchParams.get("sort") ?? "newest";
+        const orderMap: Record<string, string> = {
+          newest: "c.created_at DESC",
+          applied: "c.times_applied DESC, c.created_at DESC",
+          severity: "CASE c.severity WHEN 'critical' THEN 1 WHEN 'important' THEN 2 ELSE 3 END, c.created_at DESC",
+          alpha: "c.title ASC",
+        };
+        const order = orderMap[sortParam] ?? orderMap.newest;
+        const rows = db.prepare(`SELECT c.*, (SELECT COUNT(*) FROM rejections WHERE constraint_id = c.id) as linked_rejection_count FROM constraints c ${where} ORDER BY ${order}`).all(...params);
+        sendJson(res, 200, rows);
+      } else if (path === "/api/constraints/summary") {
+        const db = getDb();
+        const byStatus = db.prepare("SELECT status, COUNT(*) as count FROM constraints GROUP BY status").all();
+        const bySeverity = db.prepare("SELECT severity, COUNT(*) as count FROM constraints GROUP BY severity").all();
+        const byDomain = db.prepare("SELECT domain, COUNT(*) as count FROM constraints GROUP BY domain ORDER BY count DESC").all();
+        const byCategory = db.prepare("SELECT category, COUNT(*) as count FROM constraints GROUP BY category ORDER BY count DESC").all();
+        const total = db.prepare("SELECT COUNT(*) as count FROM constraints").get() as { count: number };
+        sendJson(res, 200, { total: total.count, by_status: byStatus, by_severity: bySeverity, by_domain: byDomain, by_category: byCategory });
       } else if (path === "/api/constraints") {
         sendJson(res, 200, getConstraints({
           domain: url.searchParams.get("domain") ?? undefined,
@@ -94,6 +155,44 @@ export async function runDashboard(args: string[]): Promise<void> {
           domain: url.searchParams.get("domain") ?? undefined,
           since: url.searchParams.get("since") ?? undefined,
         }));
+      } else if (path.startsWith("/api/rejection/")) {
+        const parts = path.slice("/api/rejection/".length).split("/");
+        const id = parts[0];
+        if (!id) { sendJson(res, 400, { error: "Missing rejection ID" }); return; }
+        const db = getDb();
+
+        if (parts[1] === "unlink" && method === "POST") {
+          const rejection = db.prepare("SELECT id, constraint_id FROM rejections WHERE id = ?").get(id) as { id: string; constraint_id: string | null } | undefined;
+          if (!rejection) { sendJson(res, 404, { error: "Rejection not found" }); return; }
+          if (!rejection.constraint_id) { sendJson(res, 400, { error: "Rejection is not linked to any constraint" }); return; }
+          db.prepare("UPDATE rejections SET constraint_id = NULL WHERE id = ?").run(id);
+          sendJson(res, 200, { success: true, rejection_id: id });
+        } else {
+          const rejection = db.prepare("SELECT * FROM rejections WHERE id = ?").get(id);
+          if (!rejection) { sendJson(res, 404, { error: "Rejection not found" }); return; }
+          sendJson(res, 200, rejection);
+        }
+      } else if (path.startsWith("/api/constraint/")) {
+        const id = path.slice("/api/constraint/".length);
+        if (!id) { sendJson(res, 400, { error: "Missing constraint ID" }); return; }
+        const db = getDb();
+
+        if (method === "DELETE") {
+          const constraint = db.prepare("SELECT id FROM constraints WHERE id = ?").get(id);
+          if (!constraint) { sendJson(res, 404, { error: "Constraint not found" }); return; }
+          const linked = db.prepare("SELECT COUNT(*) as count FROM rejections WHERE constraint_id = ?").get(id) as { count: number };
+          if (linked.count > 0) {
+            sendJson(res, 400, { error: `Cannot delete constraint with ${linked.count} linked rejection(s). Unlink them first.` });
+            return;
+          }
+          db.prepare("DELETE FROM constraints WHERE id = ?").run(id);
+          sendJson(res, 200, { success: true, constraint_id: id });
+        } else {
+          const constraint = db.prepare("SELECT * FROM constraints WHERE id = ?").get(id);
+          if (!constraint) { sendJson(res, 404, { error: "Constraint not found" }); return; }
+          const linkedRejections = db.prepare("SELECT * FROM rejections WHERE constraint_id = ? ORDER BY created_at DESC").all(id);
+          sendJson(res, 200, { ...constraint as Record<string, unknown>, linked_rejections: linkedRejections });
+        }
       } else {
         sendJson(res, 404, { error: "Not found" });
       }

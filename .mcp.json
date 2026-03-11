@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "Context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp",
+        "--api-key",
+        "ctx7sk-6c7b1d33-1ec3-4a8b-92ea-b798eadf35b5"
+      ],
+      "env": {},
+      "disabled": false,
+      "autoApprove": [
+        "query-docs",
+        "resolve-library-id"
+      ]
+    }
+  }
+}
