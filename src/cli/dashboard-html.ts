@@ -92,7 +92,7 @@ button.active { border-color: var(--accent); color: var(--accent); }
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -464,8 +464,11 @@ footer a {
 
 footer a:hover { text-decoration: underline; }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .stats-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 900px) {
   .two-col { grid-template-columns: 1fr; }
 }
 
@@ -515,18 +518,18 @@ const BODY = `
   <div id="patterns-list"></div>
 </section>
 
-<section class="two-col">
-  <div class="card" id="domain-gaps-section" style="display:none">
+<section class="two-col" id="gaps-graduation-section" style="display:none">
+  <div class="card" id="domain-gaps-section">
     <h2>Domain Gaps <span class="section-label">— taste being lost</span></h2>
     <div id="domain-gaps-list"></div>
   </div>
-  <div class="card" id="graduation-section" style="display:none">
+  <div class="card" id="graduation-section">
     <h2>Ready to Graduate <span class="section-label">— move to CLAUDE.md</span></h2>
     <div id="graduation-list"></div>
   </div>
 </section>
 
-<section class="two-col">
+<section class="two-col" id="dead-elevation-section">
   <div class="card" id="dead-section" style="display:none">
     <h2>Fading Constraints <span class="section-label">— applied before, silent now</span></h2>
     <div id="dead-list"></div>
@@ -589,12 +592,14 @@ function renderStatsCards(s) {
   var coveragePct = s.total_rejections > 0 ? Math.round((encoded / s.total_rejections) * 100) : 0;
   var coverageClass = coveragePct >= 80 ? ' good' : coveragePct >= 50 ? '' : ' warn';
   var wd = s.week_delta || {};
+  var domainCount = (s.rejections_by_domain || []).length;
   el.innerHTML =
     '<div class="stat-card"><div class="value">' + s.total_rejections + '</div><div class="label">Rejections</div>' + deltaHtml(wd.rejections, 'this week') + '</div>' +
     '<div class="stat-card"><div class="value">' + s.total_constraints + '</div><div class="label">Constraints</div>' + deltaHtml(wd.constraints, 'this week') + '</div>' +
     '<div class="stat-card good"><div class="value">' + s.active_constraints + '</div><div class="label">Active</div></div>' +
     '<div class="stat-card' + unencodedClass + '"><div class="value">' + s.unencoded_rejections + '</div><div class="label">Unencoded</div></div>' +
-    '<div class="stat-card' + coverageClass + '"><div class="value">' + coveragePct + '%</div><div class="label">Coverage</div>' + deltaHtml(wd.encoded, 'encoded this week') + '</div>';
+    '<div class="stat-card' + coverageClass + '"><div class="value">' + coveragePct + '%</div><div class="label">Coverage</div>' + deltaHtml(wd.encoded, 'encoded this week') + '</div>' +
+    '<div class="stat-card"><div class="value">' + domainCount + '</div><div class="label">Domains</div></div>';
 }
 
 function renderDomainBars(s) {
@@ -816,6 +821,7 @@ function renderGraduation(s) {
   var items = s.graduation_candidates || [];
   if (items.length === 0) {
     section.style.display = 'none';
+    updateGapsGraduationWrapper();
     return;
   }
   section.style.display = '';
@@ -829,6 +835,28 @@ function renderGraduation(s) {
       '<span>Applied ' + c.times_applied + 'x</span></div></div>';
   }
   el.innerHTML = html;
+  updateGapsGraduationWrapper();
+}
+
+function updateGapsGraduationWrapper() {
+  var wrapper = document.getElementById('gaps-graduation-section');
+  var gaps = document.getElementById('domain-gaps-section');
+  var grad = document.getElementById('graduation-section');
+  var gapsHidden = gaps.style.display === 'none';
+  var gradHidden = grad.style.display === 'none';
+  if (gapsHidden && gradHidden) {
+    wrapper.style.display = 'none';
+  } else {
+    wrapper.style.display = '';
+    wrapper.style.gridTemplateColumns = (gapsHidden || gradHidden) ? '1fr' : '1fr 1fr';
+  }
+}
+
+function updateDeadElevationWrapper() {
+  var wrapper = document.getElementById('dead-elevation-section');
+  var dead = document.getElementById('dead-section');
+  var deadHidden = dead.style.display === 'none';
+  wrapper.style.gridTemplateColumns = deadHidden ? '1fr' : '1fr 1fr';
 }
 
 function renderDomainGaps(s) {
@@ -837,6 +865,7 @@ function renderDomainGaps(s) {
   var items = s.domain_gaps || [];
   if (items.length === 0) {
     section.style.display = 'none';
+    updateGapsGraduationWrapper();
     return;
   }
   section.style.display = '';
@@ -852,6 +881,7 @@ function renderDomainGaps(s) {
       '</div>';
   }
   el.innerHTML = html;
+  updateGapsGraduationWrapper();
 }
 
 function renderDead(s) {
@@ -860,6 +890,7 @@ function renderDead(s) {
   var items = s.dead_constraints || [];
   if (items.length === 0) {
     section.style.display = 'none';
+    updateDeadElevationWrapper();
     return;
   }
   section.style.display = '';
@@ -869,6 +900,7 @@ function renderDead(s) {
     html += renderConstraintDetail(c, '<span>Applied ' + c.times_applied + 'x · last ' + timeAgo(c.last_applied_at) + '</span>');
   }
   el.innerHTML = html;
+  updateDeadElevationWrapper();
 }
 
 function renderElevation(s) {
