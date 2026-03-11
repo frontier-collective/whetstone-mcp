@@ -4,6 +4,18 @@ A whetstone is a flat stone used to sharpen blades. The blade does the cutting, 
 
 Whetstone MCP applies this metaphor to AI-assisted development. The AI is the blade. Your judgment is the stone. Every time you reject AI output and explain why, you're sharpening the edge. Whetstone captures those moments and turns them into durable, queryable constraints — so the blade stays sharp across conversations, projects, and teams.
 
+## Features
+
+- **Capture rejections** — log what was wrong and why, as structured data, inside your agent conversation
+- **Encode constraints** — distill recurring rejections into durable, queryable rules with severity and domain
+- **Proactive application** — agents fetch constraints before generating output, so you don't reject the same thing twice
+- **Pattern detection** — surface clusters of similar rejections that haven't been encoded yet
+- **Web dashboard** — real-time overview of constraint health, domain gaps, graduation candidates, and trends
+- **Per-project storage** — each project has its own SQLite database, committed to git so constraints travel with the code
+- **Git integration** — pre-push hook exports human-readable constraint snapshots, making taste changes visible in diffs
+- **Agent-agnostic** — works with any MCP-compatible agent (Claude Code, Cursor, Codex, Kiro, or anything else)
+- **CLI + MCP** — every tool is available both as an MCP tool for agents and as a CLI subcommand for humans
+
 ## How It Works
 
 1. You reject AI output during a conversation and explain why
@@ -151,6 +163,33 @@ Rejection (raw event — "this is wrong because...")
 ```
 
 Rejections are the raw material. Constraints are the refined product. When a constraint has proven durable, export it to your project's permanent docs and deprecate it in Whetstone.
+
+## Dashboard
+
+Whetstone includes a web dashboard for visualizing your project's constraint health at a glance.
+
+```bash
+whetstone dashboard               # launch on localhost:1337
+whetstone dashboard --port 3000   # use a different port
+```
+
+The dashboard auto-refreshes every 5 seconds and is designed to run alongside your agent — open it in a browser while you work.
+
+### What you'll see
+
+**Summary cards** — total rejections, constraints, and the percentage of rejections that have been encoded into constraints. Each card includes a weekly delta showing the trend over the last 7 days.
+
+**Unencoded patterns** — clusters of similar rejections that haven't been encoded into constraints yet. These are the "you keep saying the same no" signals. Each cluster shows a suggested action to encode it, closing the flywheel.
+
+**Domain gaps** — domains ranked by their encoding coverage (lowest first). A domain with many rejections but few constraints is a gap in your encoded taste.
+
+**Graduation candidates** — constraints that have been applied 8 or more times, signaling they're durable enough to graduate to your project's permanent docs (CLAUDE.md, cursor rules, etc.).
+
+**Fading constraints** — active constraints that were once used but haven't been applied in over 30 days. These may need to be refreshed, refined, or deprecated.
+
+**Recent activity** — the latest rejections and constraints with domain badges, timestamps, and status indicators.
+
+The dashboard reads from the same SQLite database as the MCP server, so everything stays in sync. After running `clear-db`, the dashboard detects the file change and reconnects automatically.
 
 ## Try It: A Complete Walkthrough
 

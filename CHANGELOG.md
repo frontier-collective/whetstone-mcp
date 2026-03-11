@@ -2,6 +2,11 @@
 
 All notable changes to Whetstone are documented here.
 
+## [0.3.2] - 2026-03-11
+
+- Add Features summary and Dashboard section to README (bd0d924)
+
+
 ## [0.3.1] - 2026-03-11
 
 - Fix stale database connection after clear-db (299a10a)
