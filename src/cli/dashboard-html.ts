@@ -795,6 +795,39 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeModal();
 });
 
+async function unlinkRejection(rejectionId) {
+  if (!confirm('Unlink this rejection from its constraint?')) return;
+  try {
+    var res = await fetch('/api/rejection/' + encodeURIComponent(rejectionId) + '/unlink', { method: 'POST' });
+    var data = await res.json();
+    if (!res.ok) { alert(data.error || 'Unknown error'); return; }
+    openRejection(rejectionId);
+    refresh();
+  } catch(err) { alert(err.message); }
+}
+
+async function unlinkFromConstraint(rejectionId, constraintId) {
+  if (!confirm('Unlink this rejection from the constraint?')) return;
+  try {
+    var res = await fetch('/api/rejection/' + encodeURIComponent(rejectionId) + '/unlink', { method: 'POST' });
+    var data = await res.json();
+    if (!res.ok) { alert(data.error || 'Unknown error'); return; }
+    openConstraint(constraintId);
+    refresh();
+  } catch(err) { alert(err.message); }
+}
+
+async function deleteConstraint(constraintId) {
+  if (!confirm('Permanently delete this constraint? This cannot be undone.')) return;
+  try {
+    var res = await fetch('/api/constraint/' + encodeURIComponent(constraintId), { method: 'DELETE' });
+    var data = await res.json();
+    if (!res.ok) { alert(data.error || 'Unknown error'); return; }
+    closeModal();
+    refresh();
+  } catch(err) { alert(err.message); }
+}
+
 async function openRejection(id) {
   var overlay = document.getElementById('modal-overlay');
   var content = document.getElementById('modal-content');
@@ -811,7 +844,7 @@ async function openRejection(id) {
     html += modalField('Reasoning', r.reasoning, { showEmpty: true });
     html += modalField('Raw Output', r.raw_output, { code: true, showEmpty: true });
     if (r.constraint_id) {
-      html += '<div class="modal-field"><div class="field-label">Encoded By</div><div class="field-value"><a href="#" onclick="event.preventDefault();openConstraint(\\'' + esc(r.constraint_id) + '\\')" style="color:var(--accent);text-decoration:none;font-family:var(--font-mono);font-size:12px">' + esc(r.constraint_id) + ' \\u2192 View constraint</a></div></div>';
+      html += '<div class="modal-field"><div class="field-label">Encoded By</div><div class="field-value" style="display:flex;align-items:center;gap:12px"><a href="#" onclick="event.preventDefault();openConstraint(\\'' + esc(r.constraint_id) + '\\')" style="color:var(--accent);text-decoration:none;font-family:var(--font-mono);font-size:12px">' + esc(r.constraint_id) + ' \\u2192 View constraint</a><button onclick="unlinkRejection(\\'' + esc(r.id) + '\\')" style="color:#e06c75;border:1px solid #e06c75;background:transparent;border-radius:4px;font-size:11px;padding:2px 8px;cursor:pointer">Unlink</button></div></div>';
     } else {
       html += modalField('Encoded By', 'Not yet encoded', { showEmpty: true });
     }
@@ -861,18 +894,29 @@ async function openConstraint(id) {
     html += modalField('Updated', formatDate(c.updated_at), { mono: true });
     // Linked rejections
     var linked = c.linked_rejections || [];
+    html += '<hr class="modal-divider">';
+    html += '<div class="modal-field"><div class="field-label">Linked Rejections (' + linked.length + ')</div>';
     if (linked.length > 0) {
-      html += '<hr class="modal-divider">';
-      html += '<div class="modal-field"><div class="field-label">Linked Rejections (' + linked.length + ')</div>';
       html += '<div class="modal-linked">';
       for (var i = 0; i < linked.length; i++) {
         var lr = linked[i];
         html += '<div class="linked-item" onclick="openRejection(\\'' + esc(lr.id) + '\\')">';
-        html += '<div class="linked-desc">' + esc(lr.description) + '</div>';
-        html += '<div class="linked-meta">' + esc(lr.domain) + ' \\u00B7 ' + timeAgo(lr.created_at) + '</div>';
-        html += '</div>';
+        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">';
+        html += '<div><div class="linked-desc">' + esc(lr.description) + '</div>';
+        html += '<div class="linked-meta">' + esc(lr.domain) + ' \\u00B7 ' + timeAgo(lr.created_at) + '</div></div>';
+        html += '<button onclick="event.stopPropagation();unlinkFromConstraint(\\'' + esc(lr.id) + '\\',\\'' + esc(c.id) + '\\')" style="color:#e06c75;border:1px solid #e06c75;background:transparent;border-radius:4px;font-size:10px;padding:2px 6px;cursor:pointer;flex-shrink:0">Unlink</button>';
+        html += '</div></div>';
       }
-      html += '</div></div>';
+      html += '</div>';
+    } else {
+      html += '<div class="field-value empty">\\u2014</div>';
+    }
+    html += '</div>';
+    if (linked.length === 0) {
+      html += '<div style="text-align:center;padding:12px 0">';
+      html += '<button onclick="deleteConstraint(\\'' + esc(c.id) + '\\')" style="color:#e06c75;border:1px solid #e06c75;background:transparent;border-radius:6px;font-size:13px;padding:8px 16px;cursor:pointer">Delete Constraint</button>';
+      html += '<div style="font-size:11px;color:var(--text-secondary);margin-top:6px">No linked rejections \\u2014 safe to delete</div>';
+      html += '</div>';
     }
     html += '</div>';
     content.innerHTML = html;

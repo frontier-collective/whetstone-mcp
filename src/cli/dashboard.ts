@@ -60,6 +60,7 @@ export async function runDashboard(args: string[]): Promise<void> {
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url ?? "/", `http://localhost:${port}`);
     const path = url.pathname;
+    const method = req.method ?? "GET";
 
     try {
       if (path === "/" || path === "") {
@@ -95,20 +96,43 @@ export async function runDashboard(args: string[]): Promise<void> {
           since: url.searchParams.get("since") ?? undefined,
         }));
       } else if (path.startsWith("/api/rejection/")) {
-        const id = path.slice("/api/rejection/".length);
+        const parts = path.slice("/api/rejection/".length).split("/");
+        const id = parts[0];
         if (!id) { sendJson(res, 400, { error: "Missing rejection ID" }); return; }
         const db = getDb();
-        const rejection = db.prepare("SELECT * FROM rejections WHERE id = ?").get(id);
-        if (!rejection) { sendJson(res, 404, { error: "Rejection not found" }); return; }
-        sendJson(res, 200, rejection);
+
+        if (parts[1] === "unlink" && method === "POST") {
+          const rejection = db.prepare("SELECT id, constraint_id FROM rejections WHERE id = ?").get(id) as { id: string; constraint_id: string | null } | undefined;
+          if (!rejection) { sendJson(res, 404, { error: "Rejection not found" }); return; }
+          if (!rejection.constraint_id) { sendJson(res, 400, { error: "Rejection is not linked to any constraint" }); return; }
+          db.prepare("UPDATE rejections SET constraint_id = NULL WHERE id = ?").run(id);
+          sendJson(res, 200, { success: true, rejection_id: id });
+        } else {
+          const rejection = db.prepare("SELECT * FROM rejections WHERE id = ?").get(id);
+          if (!rejection) { sendJson(res, 404, { error: "Rejection not found" }); return; }
+          sendJson(res, 200, rejection);
+        }
       } else if (path.startsWith("/api/constraint/")) {
         const id = path.slice("/api/constraint/".length);
         if (!id) { sendJson(res, 400, { error: "Missing constraint ID" }); return; }
         const db = getDb();
-        const constraint = db.prepare("SELECT * FROM constraints WHERE id = ?").get(id);
-        if (!constraint) { sendJson(res, 404, { error: "Constraint not found" }); return; }
-        const linkedRejections = db.prepare("SELECT * FROM rejections WHERE constraint_id = ? ORDER BY created_at DESC").all(id);
-        sendJson(res, 200, { ...constraint as Record<string, unknown>, linked_rejections: linkedRejections });
+
+        if (method === "DELETE") {
+          const constraint = db.prepare("SELECT id FROM constraints WHERE id = ?").get(id);
+          if (!constraint) { sendJson(res, 404, { error: "Constraint not found" }); return; }
+          const linked = db.prepare("SELECT COUNT(*) as count FROM rejections WHERE constraint_id = ?").get(id) as { count: number };
+          if (linked.count > 0) {
+            sendJson(res, 400, { error: `Cannot delete constraint with ${linked.count} linked rejection(s). Unlink them first.` });
+            return;
+          }
+          db.prepare("DELETE FROM constraints WHERE id = ?").run(id);
+          sendJson(res, 200, { success: true, constraint_id: id });
+        } else {
+          const constraint = db.prepare("SELECT * FROM constraints WHERE id = ?").get(id);
+          if (!constraint) { sendJson(res, 404, { error: "Constraint not found" }); return; }
+          const linkedRejections = db.prepare("SELECT * FROM rejections WHERE constraint_id = ? ORDER BY created_at DESC").all(id);
+          sendJson(res, 200, { ...constraint as Record<string, unknown>, linked_rejections: linkedRejections });
+        }
       } else {
         sendJson(res, 404, { error: "Not found" });
       }
