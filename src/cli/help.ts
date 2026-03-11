@@ -36,6 +36,9 @@ export async function runHelp(): Promise<void> {
     `  ${CYAN}link${RESET}                Link rejections to a constraint`,
     `  ${CYAN}update-constraint${RESET}   Refine, supersede, or deprecate a constraint`,
     "",
+    `  ${YELLOW}Visualize${RESET}`,
+    `  ${CYAN}dashboard${RESET}           Open web dashboard (default port: 1337)`,
+    "",
     `  ${DIM}(none)${RESET}              Start MCP server (used by agent config, not run manually)`,
     "",
     `  ${YELLOW}Common Options${RESET}`,
@@ -59,6 +62,8 @@ export async function runHelp(): Promise<void> {
     `  ${DIM}$${RESET} whetstone stats`,
     `  ${DIM}$${RESET} whetstone export --domain backend --format json`,
     `  ${DIM}$${RESET} whetstone update-constraint --id 01ABC123 --status deprecated`,
+    `  ${DIM}$${RESET} whetstone dashboard`,
+    `  ${DIM}$${RESET} whetstone dashboard --port 8080`,
     "",
   ];
   console.log(lines.join("\n"));

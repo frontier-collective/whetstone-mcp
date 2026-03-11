@@ -19,6 +19,9 @@ if (cliCommand === "init") {
 } else if (cliCommand === "hook") {
   const { runHook } = await import("./cli/hook.js");
   await runHook();
+} else if (cliCommand === "dashboard") {
+  const { runDashboard } = await import("./cli/dashboard.js");
+  await runDashboard(process.argv.slice(3));
 } else if (cliCommand === "-v" || cliCommand === "--version") {
   console.log(VERSION);
 } else if (cliCommand === "-h" || cliCommand === "--help" || cliCommand === "help") {

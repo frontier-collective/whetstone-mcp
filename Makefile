@@ -5,7 +5,8 @@
 .PHONY: help install setup build dev test clean init \
         version release gh-release npm-publish \
         tool-reject tool-constrain tool-get-constraints tool-search \
-        tool-applied tool-link tool-update-constraint tool-export tool-patterns tool-stats tool-list
+        tool-applied tool-link tool-update-constraint tool-export tool-patterns tool-stats tool-list \
+        dashboard
 
 # ─── Colours ──────────────────────────────────────────────────────────
 
@@ -63,6 +64,9 @@ clean: ## Remove dist/ and test database
 
 init: build ## Set up .whetstone/ directory and database
 	@node dist/index.js init
+
+dashboard: build ## Start the web dashboard (PORT= optional)
+	@WHETSTONE_DB=$(DB) node dist/index.js dashboard $(if $(PORT),--port $(PORT))
 
 ##@ Versioning
 
