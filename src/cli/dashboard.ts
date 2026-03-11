@@ -1,7 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "http";
 import { exec } from "child_process";
 import { platform } from "os";
-import { getDashboardHtml } from "./dashboard-html.js";
+import { getDashboardHtml } from "./dashboard/index.js";
 
 const DEFAULT_PORT = 1337;
 
