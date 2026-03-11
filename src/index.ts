@@ -46,7 +46,7 @@ async function startServer(): Promise<void> {
   const { link } = await import("./tools/link.js");
   const { updateConstraint } = await import("./tools/update-constraint.js");
   const { exportConstraints } = await import("./tools/export.js");
-  const { closeDb } = await import("./db/connection.js");
+  const { getDbPath, closeDb } = await import("./db/connection.js");
   const fmt = await import("./cli/format.js");
 
   const server = new McpServer({
@@ -212,6 +212,16 @@ async function startServer(): Promise<void> {
       const { stats } = await import("./tools/stats.js");
       const s = stats();
       return { content: [{ type: "text", text: fmt.formatStatsResult(s) }] };
+    },
+  );
+
+  server.tool(
+    "db_path",
+    "Returns the absolute path to the SQLite database file this Whetstone instance is using. Useful for diagnostics and verifying which project's constraints are loaded.",
+    {},
+    async () => {
+      const dbPath = getDbPath();
+      return { content: [{ type: "text", text: `Database: ${dbPath}` }] };
     },
   );
 
