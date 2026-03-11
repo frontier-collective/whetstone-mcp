@@ -1,6 +1,7 @@
 // <whet-app> — Top-level application shell.
 // Owns routing, auto-refresh timer, and page switching.
-// Renders <whet-nav> + page containers + modal overlay.
+// Renders <whet-nav> + page components + modal overlay.
+// Delegates data fetching to page components via load().
 // Exposes global functions for backward compat with onclick handlers.
 
 export const APP = `
@@ -54,37 +55,19 @@ class WhetApp extends WhetBase {
     nav.currentPage = page;
 
     window.location.hash = page === 'overview' ? '' : page;
-    if (page === 'constraints') loadConstraintsPage();
-    if (page === 'rejections') loadRejectionsPage();
+
+    // Delegate to page component
+    var pageEl = this.querySelector('#page-' + page);
+    if (pageEl && pageEl.load) pageEl.load();
   }
 
   async refresh() {
     var nav = this.querySelector('whet-nav');
     nav.status = 'Refreshing...';
     try {
-      if (this.currentPage === 'overview') {
-        var results = await Promise.all([
-          fetchJson('/api/stats'),
-          fetchJson('/api/list?status=unencoded&limit=30'),
-          fetchJson('/api/patterns')
-        ]);
-        var stats = results[0];
-        var listResult = results[1];
-        var patternsData = results[2];
-        renderStatsCards(stats);
-        renderDomainBars(stats);
-        renderMostApplied(stats);
-        renderPatterns(patternsData);
-        renderUnencoded(listResult);
-        renderRecentlyEncoded(stats);
-        renderDomainGaps(stats);
-        renderGraduation(stats);
-        renderDead(stats);
-        renderElevation(stats);
-      } else if (this.currentPage === 'rejections') {
-        await loadRejectionsPage();
-      } else if (this.currentPage === 'constraints') {
-        await loadConstraintsPage();
+      var pageEl = this.querySelector('#page-' + this.currentPage);
+      if (pageEl && pageEl.load) {
+        await pageEl.load();
       }
       nav.status = 'Updated ' + new Date().toLocaleTimeString();
     } catch (err) {

@@ -1,0 +1,190 @@
+// <whet-constraints> — Constraints page with filters, summary stats, and list.
+// Owns filter state and data fetching.
+// Exposes load() for <whet-app> to call on page switch/refresh.
+
+export const CONSTRAINTS = `
+class WhetConstraints extends WhetBase {
+  connectedCallback() {
+    super.connectedCallback();
+    this._searchTimer = null;
+    this.innerHTML = this._template();
+    this._wireEvents();
+
+    // Expose global wrappers for backward compat with onclick handlers
+    var self = this;
+    window.applyConstraintFilters = function() { self.load(); };
+    window.debounceConstraintSearch = function() { self._debounceSearch(); };
+    window.clearConstraintFilters = function() { self._clearFilters(); };
+    window.loadConstraintsPage = function() { self.load(); };
+  }
+
+  _template() {
+    return '<div class="filter-bar" id="constraints-filters">' +
+      '<select id="cf-domain" onchange="applyConstraintFilters()"><option value="">All Domains</option></select>' +
+      '<select id="cf-severity" onchange="applyConstraintFilters()">' +
+        '<option value="">All Severities</option>' +
+        '<option value="critical">Critical</option>' +
+        '<option value="important">Important</option>' +
+        '<option value="preference">Preference</option>' +
+      '</select>' +
+      '<select id="cf-status" onchange="applyConstraintFilters()">' +
+        '<option value="">All Statuses</option>' +
+        '<option value="active">Active</option>' +
+        '<option value="deprecated">Deprecated</option>' +
+        '<option value="superseded">Superseded</option>' +
+      '</select>' +
+      '<select id="cf-category" onchange="applyConstraintFilters()"><option value="">All Categories</option></select>' +
+      '<select id="cf-sort" onchange="applyConstraintFilters()">' +
+        '<option value="newest">Newest First</option>' +
+        '<option value="applied">Most Applied</option>' +
+        '<option value="severity">Severity</option>' +
+        '<option value="alpha">Alphabetical</option>' +
+      '</select>' +
+      '<input type="text" id="cf-search" placeholder="Search constraints..." oninput="debounceConstraintSearch()">' +
+      '<button onclick="clearConstraintFilters()">Clear</button>' +
+    '</div>' +
+    '<div class="constraints-summary" id="constraints-summary"></div>' +
+    '<div id="constraints-count" class="results-count"></div>' +
+    '<div id="constraints-list"></div>';
+  }
+
+  _wireEvents() {
+    // Events are wired via onclick/oninput attributes pointing to global wrappers
+  }
+
+  _buildFilterParams() {
+    var parts = [];
+    var d = document.getElementById('cf-domain').value;
+    var sv = document.getElementById('cf-severity').value;
+    var st = document.getElementById('cf-status').value;
+    var cat = document.getElementById('cf-category').value;
+    var sort = document.getElementById('cf-sort').value;
+    var q = document.getElementById('cf-search').value.trim();
+    if (d) parts.push('domain=' + encodeURIComponent(d));
+    if (sv) parts.push('severity=' + encodeURIComponent(sv));
+    if (st) parts.push('status=' + encodeURIComponent(st));
+    if (cat) parts.push('category=' + encodeURIComponent(cat));
+    if (sort) parts.push('sort=' + encodeURIComponent(sort));
+    if (q) parts.push('q=' + encodeURIComponent(q));
+    return parts.length > 0 ? '?' + parts.join('&') : '';
+  }
+
+  _debounceSearch() {
+    var self = this;
+    if (this._searchTimer) clearTimeout(this._searchTimer);
+    this._searchTimer = setTimeout(function() { self.load(); }, 300);
+  }
+
+  _clearFilters() {
+    document.getElementById('cf-domain').value = '';
+    document.getElementById('cf-severity').value = '';
+    document.getElementById('cf-status').value = '';
+    document.getElementById('cf-category').value = '';
+    document.getElementById('cf-sort').value = 'newest';
+    document.getElementById('cf-search').value = '';
+    this.load();
+  }
+
+  _populateDropdowns(summary) {
+    var domainEl = document.getElementById('cf-domain');
+    var curDomain = domainEl.value;
+    domainEl.innerHTML = '<option value="">All Domains</option>';
+    var domains = summary.by_domain || [];
+    for (var i = 0; i < domains.length; i++) {
+      domainEl.innerHTML += '<option value="' + esc(domains[i].domain) + '">' + esc(domains[i].domain) + ' (' + domains[i].count + ')</option>';
+    }
+    domainEl.value = curDomain;
+
+    var catEl = document.getElementById('cf-category');
+    var curCat = catEl.value;
+    catEl.innerHTML = '<option value="">All Categories</option>';
+    var cats = summary.by_category || [];
+    for (var j = 0; j < cats.length; j++) {
+      catEl.innerHTML += '<option value="' + esc(cats[j].category) + '">' + esc(cats[j].category) + ' (' + cats[j].count + ')</option>';
+    }
+    catEl.value = curCat;
+  }
+
+  _renderSummary(summary) {
+    var el = document.getElementById('constraints-summary');
+    var total = summary.total || 0;
+    var statusMap = {};
+    var byStatus = summary.by_status || [];
+    for (var i = 0; i < byStatus.length; i++) statusMap[byStatus[i].status] = byStatus[i].count;
+    var sevMap = {};
+    var bySev = summary.by_severity || [];
+    for (var j = 0; j < bySev.length; j++) sevMap[bySev[j].severity] = bySev[j].count;
+
+    el.innerHTML =
+      '<whet-stat-card value="' + total + '" label="Total"></whet-stat-card>' +
+      '<whet-stat-card value="' + (statusMap.active || 0) + '" label="Active" value-class="good"></whet-stat-card>' +
+      '<whet-stat-card value="' + (statusMap.deprecated || 0) + '" label="Deprecated"></whet-stat-card>' +
+      '<whet-stat-card value="' + (statusMap.superseded || 0) + '" label="Superseded"></whet-stat-card>' +
+      '<whet-stat-card value="' + (sevMap.critical || 0) + '" label="Critical" value-color="var(--accent-red)"></whet-stat-card>' +
+      '<whet-stat-card value="' + (sevMap.important || 0) + '" label="Important" value-color="var(--accent-yellow)"></whet-stat-card>' +
+      '<whet-stat-card value="' + (sevMap.preference || 0) + '" label="Preference" value-color="var(--accent-purple)"></whet-stat-card>';
+  }
+
+  _renderList(constraints) {
+    var countEl = document.getElementById('constraints-count');
+    var el = document.getElementById('constraints-list');
+    countEl.innerHTML = constraints.length + ' constraint' + (constraints.length !== 1 ? 's' : '');
+
+    if (constraints.length === 0) {
+      el.innerHTML = '<div class="empty">No constraints match the current filters</div>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < constraints.length; i++) {
+      var c = constraints[i];
+      var statusBadge = c.status !== 'active' ? '<whet-badge text="' + esc(c.status) + '"></whet-badge>' : '';
+      var linkedCount = c.linked_rejection_count || 0;
+      var appliedText = c.times_applied > 0 ? 'Applied ' + c.times_applied + 'x' : 'Never applied';
+      var staleIndicator = '';
+      if (c.status === 'active' && c.times_applied === 0) {
+        var ageMs = Date.now() - new Date(c.created_at).getTime();
+        if (ageMs > 7 * 86400000) staleIndicator = ' \\u00B7 <span style="color:var(--accent-yellow)" title="Never applied, older than 7 days">stale</span>';
+      }
+
+      // Parse tags
+      var tagsHtml = '';
+      try {
+        var tags = c.tags ? JSON.parse(c.tags) : null;
+        if (tags && tags.length > 0) {
+          for (var t = 0; t < tags.length; t++) tagsHtml += '<span class="tag">' + esc(tags[t]) + '</span>';
+        }
+      } catch(e) {}
+
+      html += '<div class="constraint-card" onclick="openConstraint(\\'' + esc(c.id) + '\\')">';
+      html += '<div class="constraint-title">' + esc(c.title) + '</div>';
+      html += '<div class="constraint-rule">' + esc(c.rule) + '</div>';
+      html += '<div class="constraint-meta">';
+      html += domainBadge(c.domain) + severityBadge(c.severity) + '<whet-badge text="' + esc(c.category) + '"></whet-badge>' + statusBadge;
+      if (tagsHtml) html += tagsHtml;
+      html += '</div>';
+      html += '<div class="constraint-stats">';
+      html += appliedText + ' \\u00B7 ' + linkedCount + ' rejection' + (linkedCount !== 1 ? 's' : '') + ' \\u00B7 ' + timeAgo(c.created_at) + staleIndicator;
+      html += '</div>';
+      html += '</div>';
+    }
+    el.innerHTML = html;
+  }
+
+  async load() {
+    var params = this._buildFilterParams();
+    try {
+      var results = await Promise.all([
+        fetchJson('/api/constraints/all' + params),
+        fetchJson('/api/constraints/summary')
+      ]);
+      this._populateDropdowns(results[1]);
+      this._renderSummary(results[1]);
+      this._renderList(results[0]);
+    } catch(err) {
+      document.getElementById('constraints-list').innerHTML = '<div class="empty">Error: ' + esc(err.message) + '</div>';
+    }
+  }
+}
+customElements.define('whet-constraints', WhetConstraints);
+`;

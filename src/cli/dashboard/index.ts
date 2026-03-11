@@ -6,6 +6,9 @@ import { BASE_COMPONENT } from "./components/base.js";
 import { STAT_CARD } from "./components/stat-card.js";
 import { BADGE } from "./components/badge.js";
 import { NAV } from "./components/nav.js";
+import { OVERVIEW } from "./components/overview.js";
+import { CONSTRAINTS } from "./components/constraints.js";
+import { REJECTIONS } from "./components/rejections.js";
 import { APP } from "./components/app.js";
 
 const LIT_CDN = "https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js";
@@ -17,6 +20,9 @@ ${BASE_COMPONENT}
 ${STAT_CARD}
 ${BADGE}
 ${NAV}
+${OVERVIEW}
+${CONSTRAINTS}
+${REJECTIONS}
 ${APP}
 </script>`;
 
