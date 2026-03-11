@@ -73,7 +73,7 @@ export const COMPAT_VARS = `
 //   .wh-list-item    Compact list row inside a section
 //
 //   .wh-filter-bar   Filter toolbar with inputs/selects
-//   .wh-modal-field  Key/value pair inside modal detail views
+//   Modal fields use .wh-field-label + .wh-field-value directly
 //   .wh-empty        Empty-state placeholder
 //
 // Spacing: parent containers own the gap between children.
@@ -82,13 +82,12 @@ export const COMPAT_VARS = `
 export const CUSTOM_CSS = `
 
 /* ── Reset ── */
-/* Tailwind v4 preflight handles the base reset.
-   Do NOT add an unlayered * { padding:0 } here — it overrides
-   Tailwind's @layer utilities due to cascade layer precedence. */
-
-* { box-sizing: border-box; }
+/* Tailwind v4 preflight handles the base reset (box-sizing, margin, padding).
+   Do NOT add unlayered resets here — they override Tailwind's
+   @layer utilities due to cascade layer precedence. */
 
 body {
+  margin: 0;
   background: radial-gradient(ellipse at top, #111820 0%, var(--color-surface) 60%);
 }
 
@@ -215,7 +214,7 @@ body {
   @apply flex gap-3 flex-wrap items-center p-4 bg-raised/50 rounded-lg border border-edge-subtle;
 }
 .wh-filter-select {
-  @apply bg-surface text-primary border border-edge rounded-md py-2 px-3
+  @apply bg-surface text-primary border border-edge rounded-md py-2 pl-3 pr-8
          text-xs font-sans transition-colors
          focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30;
 }
@@ -233,15 +232,14 @@ body {
 
 /* ── Modal ── */
 /*
- * Modal layout follows the standard Tailwind dialog pattern:
+ * Modal layout uses Tailwind utility classes directly on each element:
  *   - Container: no padding (header + body own theirs)
- *   - Header:    px-6 pt-5 pb-4, border-b, sticky
- *   - Body:      p-6, flex col gap-5 for field spacing
- *   - Fields:    label + value, no margin/border (parent gap handles spacing)
- *   - Sections:  <hr> for visual breaks between field groups
+ *   - Header:    px-6 pt-6 pb-5, border-b, sticky, backdrop-blur
+ *   - Body:      p-6, flex flex-col gap-5 for field spacing
+ *   - Fields:    .wh-field-label + .wh-field-value (parent gap handles spacing)
+ *   - Sections:  <hr class="border-none border-t border-edge-subtle">
  */
 
-.wh-modal-field {}
 .wh-field-label {
   @apply text-[11px] font-bold text-muted uppercase tracking-widest mb-2 font-mono;
 }
@@ -318,5 +316,82 @@ details[open] summary::before { transform: rotate(90deg); }
 .pattern-examples div::before {
   content: '\\2022 ';
   color: var(--color-muted);
+}
+
+`;
+
+// Choices.js dark theme overrides.
+// MUST live in a plain <style> block, NOT inside <style type="text/tailwindcss">.
+// Tailwind v4 wraps everything in @layer, which loses to the unlayered Choices.js CDN CSS.
+export const CHOICES_CSS = `
+/* Set Choices.js CSS custom properties for dark theme */
+:root {
+  --choices-bg-color: var(--color-surface);
+  --choices-bg-color-dropdown: var(--color-card);
+  --choices-bg-color-disabled: var(--color-raised);
+  --choices-text-color: var(--color-primary);
+  --choices-primary-color: var(--color-accent);
+  --choices-highlighted-color: rgba(88,166,255,0.15);
+  --choices-border-radius: 0.375rem;
+}
+
+.choices {
+  margin-bottom: 0;
+  font-size: 0.75rem;
+}
+.choices__inner {
+  border-color: var(--color-edge);
+  padding: 4px 8px 4px 12px;
+  min-height: auto;
+  font-size: 0.75rem;
+  color: var(--color-primary);
+}
+.choices[data-type*="select-one"] .choices__inner {
+  padding-bottom: 4px;
+}
+.choices__list--single {
+  padding: 2px 16px 2px 0;
+}
+.choices__list--single .choices__item {
+  color: var(--color-muted);
+}
+.choices__list--single .choices__placeholder {
+  opacity: 1;
+}
+.choices__list--dropdown,
+.choices__list[aria-expanded] {
+  border-color: var(--color-edge);
+  z-index: 50;
+  width: max-content !important;
+  min-width: 100%;
+  word-break: normal;
+  white-space: nowrap;
+}
+.choices__list--dropdown .choices__item,
+.choices__list[aria-expanded] .choices__item {
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  padding: 8px 12px;
+}
+.choices__list--dropdown .choices__item--selectable.is-highlighted,
+.choices__list[aria-expanded] .choices__item--selectable.is-highlighted {
+  color: var(--color-accent);
+}
+.choices__input {
+  color: var(--color-primary);
+  font-size: 0.75rem;
+}
+.choices.is-focused .choices__inner {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px rgba(88,166,255,0.3);
+}
+.choices[data-type*="select-one"]::after {
+  border-color: var(--color-muted) transparent transparent;
+}
+.choices[data-type*="select-one"].is-open::after {
+  border-color: transparent transparent var(--color-muted);
+}
+.choices__list--dropdown .choices__item--selectable::after {
+  display: none;
 }
 `;

@@ -1,5 +1,6 @@
 // <whet-nav> — Header navigation with tabs, status, and refresh controls.
 // Dispatches events: page-change, manual-refresh, toggle-refresh
+// Responsive: collapses to hamburger menu below md (768px).
 
 export const NAV = `
 class WhetNav extends WhetBase {
@@ -16,19 +17,20 @@ class WhetNav extends WhetBase {
     this.currentPage = 'overview';
     this.status = 'Loading...';
     this.autoRefresh = true;
+    this._menuOpen = false;
   }
 
   render() {
     var pages = ['overview', 'rejections', 'constraints'];
     var self = this;
     this.innerHTML = '';
-    this.style.display = 'block';
-    this.style.marginBottom = '1rem';
+    this.className = 'block mb-4';
 
+    // ── Header row ──────────────────────────────────────────────────
+    // Desktop (md+): 3-column grid  — logo | tabs | controls
+    // Mobile (<md):  flex row        — logo | status + hamburger
     var header = document.createElement('header');
-    header.className = 'flex items-center justify-between border-b border-edge';
-    header.style.paddingTop = '1rem';
-    header.style.paddingBottom = '1rem';
+    header.className = 'flex items-center justify-between md:grid md:grid-cols-3 border-b border-edge py-4';
 
     // Logo
     var h1 = document.createElement('h1');
@@ -36,9 +38,9 @@ class WhetNav extends WhetBase {
     h1.innerHTML = 'Whetstone <span class="text-muted font-normal text-xs ml-2 uppercase tracking-widest">Dashboard</span>';
     header.appendChild(h1);
 
-    // Nav tabs
+    // Nav tabs (hidden on mobile, shown desktop)
     var nav = document.createElement('nav');
-    nav.className = 'flex gap-3';
+    nav.className = 'hidden md:flex gap-3 justify-center';
     for (var i = 0; i < pages.length; i++) {
       (function(page) {
         var btn = document.createElement('button');
@@ -54,9 +56,9 @@ class WhetNav extends WhetBase {
     }
     header.appendChild(nav);
 
-    // Controls
+    // Controls (hidden on mobile, shown desktop)
     var controls = document.createElement('div');
-    controls.className = 'flex items-center gap-3';
+    controls.className = 'hidden md:flex items-center gap-3 justify-end';
 
     var statusSpan = document.createElement('span');
     statusSpan.className = 'text-xs text-muted font-mono';
@@ -64,7 +66,7 @@ class WhetNav extends WhetBase {
     controls.appendChild(statusSpan);
 
     var refreshBtn = document.createElement('button');
-    refreshBtn.className = 'bg-raised text-primary border border-edge rounded-md py-2 px-3 text-xs cursor-pointer font-sans hover:bg-card hover:border-edge-hover transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent/30';
+    refreshBtn.className = 'hidden lg:inline-flex bg-raised text-primary border border-edge rounded-md py-2 px-3 text-xs cursor-pointer font-sans hover:bg-card hover:border-edge-hover transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent/30';
     refreshBtn.textContent = 'Refresh';
     refreshBtn.addEventListener('click', function() {
       self.dispatchEvent(new CustomEvent('manual-refresh', { bubbles: true }));
@@ -73,7 +75,7 @@ class WhetNav extends WhetBase {
 
     var autoBtn = document.createElement('button');
     autoBtn.textContent = 'Auto: ' + (this.autoRefresh ? 'ON' : 'OFF');
-    autoBtn.className = 'bg-raised text-primary border border-edge rounded-md py-2 px-3 text-xs cursor-pointer font-sans hover:bg-card hover:border-edge-hover transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent/30' +
+    autoBtn.className = 'hidden lg:inline-flex bg-raised text-primary border border-edge rounded-md py-2 px-3 text-xs cursor-pointer font-sans hover:bg-card hover:border-edge-hover transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent/30' +
       (this.autoRefresh ? ' !border-accent !text-accent !bg-glow-accent' : '');
     autoBtn.addEventListener('click', function() {
       self.dispatchEvent(new CustomEvent('toggle-refresh', { bubbles: true }));
@@ -81,7 +83,50 @@ class WhetNav extends WhetBase {
     controls.appendChild(autoBtn);
 
     header.appendChild(controls);
+
+    // Mobile: status + hamburger (visible only below md)
+    var mobileRight = document.createElement('div');
+    mobileRight.className = 'flex md:hidden items-center gap-3';
+
+    var mobileStatus = document.createElement('span');
+    mobileStatus.className = 'text-xs text-muted font-mono';
+    mobileStatus.textContent = this.status;
+    mobileRight.appendChild(mobileStatus);
+
+    var hamburger = document.createElement('button');
+    hamburger.className = 'border-none bg-transparent text-muted text-2xl cursor-pointer p-1 rounded-md hover:text-primary hover:bg-raised transition-colors leading-none';
+    hamburger.innerHTML = this._menuOpen ? '\\u2715' : '\\u2630';
+    hamburger.addEventListener('click', function() {
+      self._menuOpen = !self._menuOpen;
+      self.render();
+    });
+    mobileRight.appendChild(hamburger);
+
+    header.appendChild(mobileRight);
     this.appendChild(header);
+
+    // ── Mobile dropdown ─────────────────────────────────────────────
+    if (this._menuOpen) {
+      var dropdown = document.createElement('div');
+      dropdown.className = 'md:hidden flex flex-col gap-1 py-3 border-b border-edge';
+
+      for (var j = 0; j < pages.length; j++) {
+        (function(page) {
+          var btn = document.createElement('button');
+          var isActive = page === self.currentPage;
+          btn.className = 'border-none w-full text-left py-3 px-4 text-sm cursor-pointer transition-all duration-150 rounded-md ' +
+            (isActive ? 'text-accent bg-glow-accent font-semibold' : 'text-muted bg-transparent hover:text-primary hover:bg-raised');
+          btn.textContent = page.charAt(0).toUpperCase() + page.slice(1);
+          btn.addEventListener('click', function() {
+            self._menuOpen = false;
+            self.dispatchEvent(new CustomEvent('page-change', { detail: page, bubbles: true }));
+          });
+          dropdown.appendChild(btn);
+        })(pages[j]);
+      }
+
+      this.appendChild(dropdown);
+    }
   }
 }
 customElements.define('whet-nav', WhetNav);

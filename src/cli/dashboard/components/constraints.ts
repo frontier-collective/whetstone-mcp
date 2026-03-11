@@ -7,6 +7,7 @@ class WhetConstraints extends WhetBase {
   connectedCallback() {
     super.connectedCallback();
     this._searchTimer = null;
+    this._choicesReady = false;
     this.innerHTML = this._template();
 
     // Expose global wrappers for backward compat with onclick handlers
@@ -20,21 +21,21 @@ class WhetConstraints extends WhetBase {
   _template() {
     return '<div class="wh-page">' +
       '<div class="wh-filter-bar">' +
-      '<select id="cf-domain" class="wh-filter-select" onchange="applyConstraintFilters()"><option value="">All Domains</option></select>' +
-      '<select id="cf-severity" class="wh-filter-select" onchange="applyConstraintFilters()">' +
+      '<select id="cf-domain" class="wh-filter-select"><option value="">All Domains</option></select>' +
+      '<select id="cf-severity" class="wh-filter-select">' +
         '<option value="">All Severities</option>' +
         '<option value="critical">Critical</option>' +
         '<option value="important">Important</option>' +
         '<option value="preference">Preference</option>' +
       '</select>' +
-      '<select id="cf-status" class="wh-filter-select" onchange="applyConstraintFilters()">' +
+      '<select id="cf-status" class="wh-filter-select">' +
         '<option value="">All Statuses</option>' +
         '<option value="active">Active</option>' +
         '<option value="deprecated">Deprecated</option>' +
         '<option value="superseded">Superseded</option>' +
       '</select>' +
-      '<select id="cf-category" class="wh-filter-select" onchange="applyConstraintFilters()"><option value="">All Categories</option></select>' +
-      '<select id="cf-sort" class="wh-filter-select" onchange="applyConstraintFilters()">' +
+      '<select id="cf-category" class="wh-filter-select"><option value="">All Categories</option></select>' +
+      '<select id="cf-sort" class="wh-filter-select">' +
         '<option value="newest">Newest First</option>' +
         '<option value="applied">Most Applied</option>' +
         '<option value="severity">Severity</option>' +
@@ -57,12 +58,38 @@ class WhetConstraints extends WhetBase {
     this._searchTimer = setTimeout(function() { self.load(); }, 300);
   }
 
+  _initChoices() {
+    if (this._choicesReady) return;
+    if (typeof Choices === 'undefined') return;
+    var self = this;
+    var ids = ['cf-domain', 'cf-severity', 'cf-status', 'cf-category', 'cf-sort'];
+    for (var i = 0; i < ids.length; i++) {
+      (function(id) {
+        var el = document.getElementById(id);
+        if (!el || el._choices) return;
+        var c = new Choices(el, {
+          searchEnabled: false,
+          shouldSort: false,
+          itemSelectText: '',
+          allowHTML: false,
+        });
+        el._choices = c;
+        el.addEventListener('change', function() { self.load(); });
+      })(ids[i]);
+    }
+    this._choicesReady = true;
+  }
+
   _clearFilters() {
-    document.getElementById('cf-domain').value = '';
-    document.getElementById('cf-severity').value = '';
-    document.getElementById('cf-status').value = '';
-    document.getElementById('cf-category').value = '';
-    document.getElementById('cf-sort').value = 'newest';
+    var ids = ['cf-domain', 'cf-severity', 'cf-status', 'cf-category'];
+    for (var i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      if (el && el._choices) el._choices.setChoiceByValue('');
+      else if (el) el.value = '';
+    }
+    var sortEl = document.getElementById('cf-sort');
+    if (sortEl && sortEl._choices) sortEl._choices.setChoiceByValue('newest');
+    else if (sortEl) sortEl.value = 'newest';
     document.getElementById('cf-search').value = '';
     this.load();
   }
@@ -87,21 +114,41 @@ class WhetConstraints extends WhetBase {
   _populateDropdowns(summary) {
     var domainEl = document.getElementById('cf-domain');
     var curDomain = domainEl.value;
-    domainEl.innerHTML = '<option value="">All Domains</option>';
     var domains = summary.by_domain || [];
+    var domainOpts = [{ value: '', label: 'All Domains' }];
     for (var i = 0; i < domains.length; i++) {
-      domainEl.innerHTML += '<option value="' + esc(domains[i].domain) + '">' + esc(domains[i].domain) + ' (' + domains[i].count + ')</option>';
+      domainOpts.push({ value: domains[i].domain, label: domains[i].domain + ' (' + domains[i].count + ')' });
     }
-    domainEl.value = curDomain;
+    if (domainEl._choices) {
+      domainEl._choices.clearChoices();
+      domainEl._choices.setChoices(domainOpts, 'value', 'label', true);
+      if (curDomain) domainEl._choices.setChoiceByValue(curDomain);
+    } else {
+      domainEl.innerHTML = '';
+      for (var di = 0; di < domainOpts.length; di++) {
+        domainEl.innerHTML += '<option value="' + esc(domainOpts[di].value) + '">' + esc(domainOpts[di].label) + '</option>';
+      }
+      domainEl.value = curDomain;
+    }
 
     var catEl = document.getElementById('cf-category');
     var curCat = catEl.value;
-    catEl.innerHTML = '<option value="">All Categories</option>';
     var cats = summary.by_category || [];
+    var catOpts = [{ value: '', label: 'All Categories' }];
     for (var j = 0; j < cats.length; j++) {
-      catEl.innerHTML += '<option value="' + esc(cats[j].category) + '">' + esc(cats[j].category) + ' (' + cats[j].count + ')</option>';
+      catOpts.push({ value: cats[j].category, label: cats[j].category + ' (' + cats[j].count + ')' });
     }
-    catEl.value = curCat;
+    if (catEl._choices) {
+      catEl._choices.clearChoices();
+      catEl._choices.setChoices(catOpts, 'value', 'label', true);
+      if (curCat) catEl._choices.setChoiceByValue(curCat);
+    } else {
+      catEl.innerHTML = '';
+      for (var ci = 0; ci < catOpts.length; ci++) {
+        catEl.innerHTML += '<option value="' + esc(catOpts[ci].value) + '">' + esc(catOpts[ci].label) + '</option>';
+      }
+      catEl.value = curCat;
+    }
   }
 
   _renderSummary(summary) {
@@ -177,6 +224,7 @@ class WhetConstraints extends WhetBase {
         fetchJson('/api/constraints/all' + params),
         fetchJson('/api/constraints/summary')
       ]);
+      this._initChoices();
       this._populateDropdowns(results[1]);
       this._renderSummary(results[1]);
       this._renderList(results[0]);

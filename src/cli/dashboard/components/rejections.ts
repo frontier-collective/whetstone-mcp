@@ -7,6 +7,7 @@ class WhetRejections extends WhetBase {
   connectedCallback() {
     super.connectedCallback();
     this._searchTimer = null;
+    this._choicesReady = false;
     this.innerHTML = this._template();
 
     // Expose global wrappers for backward compat with onclick handlers
@@ -20,13 +21,13 @@ class WhetRejections extends WhetBase {
   _template() {
     return '<div class="wh-page">' +
       '<div class="wh-filter-bar">' +
-      '<select id="rf-domain" class="wh-filter-select" onchange="applyRejectionFilters()"><option value="">All Domains</option></select>' +
-      '<select id="rf-encoded" class="wh-filter-select" onchange="applyRejectionFilters()">' +
+      '<select id="rf-domain" class="wh-filter-select"><option value="">All Domains</option></select>' +
+      '<select id="rf-encoded" class="wh-filter-select">' +
         '<option value="">All</option>' +
         '<option value="no">Unencoded</option>' +
         '<option value="yes">Encoded</option>' +
       '</select>' +
-      '<select id="rf-sort" class="wh-filter-select" onchange="applyRejectionFilters()">' +
+      '<select id="rf-sort" class="wh-filter-select">' +
         '<option value="newest">Newest First</option>' +
         '<option value="oldest">Oldest First</option>' +
       '</select>' +
@@ -64,10 +65,36 @@ class WhetRejections extends WhetBase {
     this._searchTimer = setTimeout(function() { self.load(); }, 300);
   }
 
+  _initChoices() {
+    if (this._choicesReady) return;
+    if (typeof Choices === 'undefined') return;
+    var self = this;
+    var ids = ['rf-domain', 'rf-encoded', 'rf-sort'];
+    for (var i = 0; i < ids.length; i++) {
+      (function(id) {
+        var el = document.getElementById(id);
+        if (!el || el._choices) return;
+        var c = new Choices(el, {
+          searchEnabled: false,
+          shouldSort: false,
+          itemSelectText: '',
+          allowHTML: false,
+        });
+        el._choices = c;
+        el.addEventListener('change', function() { self.load(); });
+      })(ids[i]);
+    }
+    this._choicesReady = true;
+  }
+
   _clearFilters() {
-    document.getElementById('rf-domain').value = '';
-    document.getElementById('rf-encoded').value = '';
-    document.getElementById('rf-sort').value = 'newest';
+    var resetMap = { 'rf-domain': '', 'rf-encoded': '', 'rf-sort': 'newest' };
+    var keys = Object.keys(resetMap);
+    for (var i = 0; i < keys.length; i++) {
+      var el = document.getElementById(keys[i]);
+      if (el && el._choices) el._choices.setChoiceByValue(resetMap[keys[i]]);
+      else if (el) el.value = resetMap[keys[i]];
+    }
     document.getElementById('rf-search').value = '';
     this.load();
   }
@@ -75,12 +102,22 @@ class WhetRejections extends WhetBase {
   _populateDropdowns(summary) {
     var domainEl = document.getElementById('rf-domain');
     var cur = domainEl.value;
-    domainEl.innerHTML = '<option value="">All Domains</option>';
     var domains = summary.by_domain || [];
+    var domainOpts = [{ value: '', label: 'All Domains' }];
     for (var i = 0; i < domains.length; i++) {
-      domainEl.innerHTML += '<option value="' + esc(domains[i].domain) + '">' + esc(domains[i].domain) + ' (' + domains[i].count + ')</option>';
+      domainOpts.push({ value: domains[i].domain, label: domains[i].domain + ' (' + domains[i].count + ')' });
     }
-    domainEl.value = cur;
+    if (domainEl._choices) {
+      domainEl._choices.clearChoices();
+      domainEl._choices.setChoices(domainOpts, 'value', 'label', true);
+      if (cur) domainEl._choices.setChoiceByValue(cur);
+    } else {
+      domainEl.innerHTML = '';
+      for (var di = 0; di < domainOpts.length; di++) {
+        domainEl.innerHTML += '<option value="' + esc(domainOpts[di].value) + '">' + esc(domainOpts[di].label) + '</option>';
+      }
+      domainEl.value = cur;
+    }
   }
 
   _renderSummary(summary) {
@@ -152,6 +189,7 @@ class WhetRejections extends WhetBase {
         fetchJson('/api/rejections/summary'),
         fetchJson('/api/patterns')
       ]);
+      this._initChoices();
       this._populateDropdowns(results[1]);
       this._renderSummary(results[1]);
       this._renderPatterns(results[2]);

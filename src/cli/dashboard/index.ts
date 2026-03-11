@@ -2,7 +2,7 @@
 // Produces a single HTML string with Tailwind v4 + Lit Web Components.
 // No build step — everything loaded from CDN.
 
-import { THEME, COMPAT_VARS, CUSTOM_CSS } from "./theme.js";
+import { THEME, COMPAT_VARS, CUSTOM_CSS, CHOICES_CSS } from "./theme.js";
 import { BASE_COMPONENT } from "./components/base.js";
 import { NAV } from "./components/nav.js";
 import { OVERVIEW } from "./components/overview.js";
@@ -12,6 +12,8 @@ import { APP } from "./components/app.js";
 
 const LIT_CDN = "https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js";
 const TAILWIND_CDN = "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4";
+const CHOICES_JS_CDN = "https://cdn.jsdelivr.net/npm/choices.js@11/public/assets/scripts/choices.min.js";
+const CHOICES_CSS_CDN = "https://cdn.jsdelivr.net/npm/choices.js@11/public/assets/styles/choices.min.css";
 
 const COMPONENT_SCRIPT = `<script type="module">
 import { LitElement, html, css } from '${LIT_CDN}';
@@ -40,15 +42,18 @@ export function getDashboardHtml(version: string): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Whetstone Dashboard</title>
 <script src="${TAILWIND_CDN}"></script>
+<link rel="stylesheet" href="${CHOICES_CSS_CDN}">
+<script src="${CHOICES_JS_CDN}"></script>
 <style type="text/tailwindcss">
 ${THEME}
 ${COMPAT_VARS}
 ${CUSTOM_CSS}
 </style>
+<style>${CHOICES_CSS}</style>
 ${COMPONENT_SCRIPT}
 </head>
 <body class="bg-surface text-primary font-sans min-h-screen flex flex-col">
-<main class="flex-1 wh-container py-6 md:py-10">
+<main class="flex-1 wh-container pb-6 md:pb-10">
 ${BODY}
 </main>
 ${footer}
@@ -208,11 +213,11 @@ async function openRejection(id) {
 
   try {
     var r = await fetchJson('/api/rejection/' + encodeURIComponent(id));
-    var html = '<div style="padding:24px 24px 20px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--color-edge);position:sticky;top:0;background:rgba(28,33,40,0.95);backdrop-filter:blur(12px);border-radius:12px 12px 0 0;z-index:10">';
-    html += '<div><div class="text-[11px] font-mono text-muted uppercase tracking-widest" style="margin-bottom:8px">Rejection</div>';
+    var html = '<div class="flex items-start justify-between px-6 pt-6 pb-5 border-b border-edge sticky top-0 bg-card/95 backdrop-blur-md rounded-t-xl z-10">';
+    html += '<div><div class="text-[11px] font-mono text-muted uppercase tracking-widest mb-2">Rejection</div>';
     html += '<h2 class="text-base font-semibold text-primary leading-snug">' + esc(r.description) + '</h2></div>';
-    html += '<button class="bg-transparent border-none text-muted text-xl cursor-pointer leading-none hover:text-primary" style="margin-left:16px;flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px" onmouseover="this.style.background=\\'var(--color-raised)\\'" onmouseout="this.style.background=\\'transparent\\'" onclick="closeModal()">\\u00D7</button></div>';
-    html += '<div style="padding:24px;display:flex;flex-direction:column;gap:20px">';
+    html += '<button class="bg-transparent border-none text-muted text-xl cursor-pointer leading-none hover:text-primary hover:bg-raised ml-4 shrink-0 w-8 h-8 flex items-center justify-center rounded-md transition-colors" onclick="closeModal()">\\u00D7</button></div>';
+    html += '<div class="p-6 flex flex-col gap-5">';
     html += '<div class="wh-flex-wrap">' + domainBadge(r.domain) + '</div>';
     html += modalField('Description', r.description);
     html += modalField('Reasoning', r.reasoning, { showEmpty: true });
@@ -222,7 +227,7 @@ async function openRejection(id) {
     } else {
       html += modalField('Encoded By', 'Not yet encoded', { showEmpty: true });
     }
-    html += '<hr style="border:none;border-top:1px solid var(--color-edge-subtle)">';
+    html += '<hr class="border-none border-t border-edge-subtle">';
     html += modalField('ID', r.id, { mono: true });
     html += modalField('Created', formatDate(r.created_at), { mono: true });
     html += '</div>';
@@ -241,11 +246,11 @@ async function openConstraint(id) {
 
   try {
     var c = await fetchJson('/api/constraint/' + encodeURIComponent(id));
-    var html = '<div style="padding:24px 24px 20px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--color-edge);position:sticky;top:0;background:rgba(28,33,40,0.95);backdrop-filter:blur(12px);border-radius:12px 12px 0 0;z-index:10">';
-    html += '<div><div class="text-[11px] font-mono text-muted uppercase tracking-widest" style="margin-bottom:8px">Constraint</div>';
+    var html = '<div class="flex items-start justify-between px-6 pt-6 pb-5 border-b border-edge sticky top-0 bg-card/95 backdrop-blur-md rounded-t-xl z-10">';
+    html += '<div><div class="text-[11px] font-mono text-muted uppercase tracking-widest mb-2">Constraint</div>';
     html += '<h2 class="text-base font-semibold text-primary leading-snug">' + esc(c.title) + '</h2></div>';
-    html += '<button class="bg-transparent border-none text-muted text-xl cursor-pointer leading-none hover:text-primary" style="margin-left:16px;flex-shrink:0;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:6px" onmouseover="this.style.background=\\'var(--color-raised)\\'" onmouseout="this.style.background=\\'transparent\\'" onclick="closeModal()">\\u00D7</button></div>';
-    html += '<div style="padding:24px;display:flex;flex-direction:column;gap:20px">';
+    html += '<button class="bg-transparent border-none text-muted text-xl cursor-pointer leading-none hover:text-primary hover:bg-raised ml-4 shrink-0 w-8 h-8 flex items-center justify-center rounded-md transition-colors" onclick="closeModal()">\\u00D7</button></div>';
+    html += '<div class="p-6 flex flex-col gap-5">';
     html += '<div class="wh-flex-wrap">' + domainBadge(c.domain) + severityBadge(c.severity) + '<span class="wh-badge">' + esc(c.category) + '</span><span class="wh-badge">' + esc(c.status) + '</span></div>';
     html += modalField('Rule', c.rule);
     html += modalField('Reasoning', c.reasoning, { showEmpty: true });
@@ -263,7 +268,7 @@ async function openConstraint(id) {
       html += modalField('Tags', null, { showEmpty: true });
     }
     html += modalField('Source', c.source, { showEmpty: true });
-    html += '<hr style="border:none;border-top:1px solid var(--color-edge-subtle)">';
+    html += '<hr class="border-none border-t border-edge-subtle">';
     html += modalField('Times Applied', String(c.times_applied || 0), { mono: true });
     html += modalField('Last Applied', c.last_applied_at ? formatDate(c.last_applied_at) : null, { mono: true, showEmpty: true });
     html += modalField('ID', c.id, { mono: true });
@@ -271,16 +276,16 @@ async function openConstraint(id) {
     html += modalField('Updated', formatDate(c.updated_at), { mono: true });
     // Linked rejections
     var linked = c.linked_rejections || [];
-    html += '<hr style="border:none;border-top:1px solid var(--color-edge-subtle)">';
+    html += '<hr class="border-none border-t border-edge-subtle">';
     html += '<div class="wh-modal-field"><div class="wh-field-label">Linked Rejections (' + linked.length + ')</div>';
     if (linked.length > 0) {
-      html += '<div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">';
+      html += '<div class="flex flex-col gap-2 mt-3">';
       for (var i = 0; i < linked.length; i++) {
         var lr = linked[i];
-        html += '<div class="bg-raised cursor-pointer border border-edge-subtle hover:border-accent hover:bg-card transition-all duration-150" style="padding:12px 16px;border-radius:6px" onclick="openRejection(\\'' + esc(lr.id) + '\\')">';
-        html += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">';
+        html += '<div class="bg-raised cursor-pointer border border-edge-subtle hover:border-accent hover:bg-card transition-all duration-150 py-3 px-4 rounded-md" onclick="openRejection(\\'' + esc(lr.id) + '\\')">';
+        html += '<div class="flex justify-between items-start gap-3">';
         html += '<div><div class="text-[13px] text-primary">' + esc(lr.description) + '</div>';
-        html += '<div class="text-[11px] text-muted" style="margin-top:4px">' + esc(lr.domain) + ' \\u00B7 ' + timeAgo(lr.created_at) + '</div></div>';
+        html += '<div class="text-[11px] text-muted mt-1">' + esc(lr.domain) + ' \\u00B7 ' + timeAgo(lr.created_at) + '</div></div>';
         html += '<button onclick="event.stopPropagation();unlinkFromConstraint(\\'' + esc(lr.id) + '\\',\\'' + esc(c.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[10px] px-3 py-1.5 cursor-pointer shrink-0 hover:bg-red hover:text-surface transition-colors">Unlink</button>';
         html += '</div></div>';
       }
@@ -290,9 +295,9 @@ async function openConstraint(id) {
     }
     html += '</div>';
     if (linked.length === 0) {
-      html += '<div style="text-align:center;padding:16px 0;border-top:1px solid var(--color-edge-subtle)">';
-      html += '<button onclick="deleteConstraint(\\'' + esc(c.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[13px] cursor-pointer hover:bg-red hover:text-surface transition-colors font-medium" style="padding:12px 20px">Delete Constraint</button>';
-      html += '<div class="text-[11px] text-muted" style="margin-top:8px">No linked rejections \\u2014 safe to delete</div>';
+      html += '<div class="text-center py-4 border-t border-edge-subtle">';
+      html += '<button onclick="deleteConstraint(\\'' + esc(c.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[13px] py-3 px-5 cursor-pointer hover:bg-red hover:text-surface transition-colors font-medium">Delete Constraint</button>';
+      html += '<div class="text-[11px] text-muted mt-2">No linked rejections \\u2014 safe to delete</div>';
       html += '</div>';
     }
     html += '</div>';

@@ -69,7 +69,10 @@ async function startServer(): Promise<void> {
     },
     async (input) => {
       const rejection = reject(input);
-      return { content: [{ type: "text", text: fmt.formatRejectionResult(rejection) }] };
+      return {
+        content: [{ type: "text", text: fmt.formatRejectionResult(rejection) }],
+        structuredContent: { ...rejection },
+      };
     },
   );
 
@@ -91,7 +94,10 @@ async function startServer(): Promise<void> {
     },
     async (input) => {
       const constraint = constrain(input);
-      return { content: [{ type: "text", text: fmt.formatConstraintCreated(constraint) }] };
+      return {
+        content: [{ type: "text", text: fmt.formatConstraintCreated(constraint) }],
+        structuredContent: { ...constraint },
+      };
     },
   );
 
@@ -104,7 +110,10 @@ async function startServer(): Promise<void> {
     },
     async (input) => {
       const constraints = getConstraints(input);
-      return { content: [{ type: "text", text: fmt.formatConstraintsList(constraints) }] };
+      return {
+        content: [{ type: "text", text: fmt.formatConstraintsList(constraints) }],
+        structuredContent: { count: constraints.length, constraints },
+      };
     },
   );
 
@@ -117,7 +126,10 @@ async function startServer(): Promise<void> {
     },
     async (input) => {
       const results = search(input);
-      return { content: [{ type: "text", text: fmt.formatSearchResults(results, input.query) }] };
+      return {
+        content: [{ type: "text", text: fmt.formatSearchResults(results, input.query) }],
+        structuredContent: { query: input.query, ...results },
+      };
     },
   );
 
@@ -129,7 +141,10 @@ async function startServer(): Promise<void> {
     },
     async (input) => {
       const result = applied(input);
-      return { content: [{ type: "text", text: fmt.formatAppliedResult(result) }] };
+      return {
+        content: [{ type: "text", text: fmt.formatAppliedResult(result) }],
+        structuredContent: { constraint_id: input.constraint_id, ...result },
+      };
     },
   );
 
@@ -142,7 +157,10 @@ async function startServer(): Promise<void> {
     },
     async (input) => {
       const result = link(input);
-      return { content: [{ type: "text", text: fmt.formatLinkResult(result) }] };
+      return {
+        content: [{ type: "text", text: fmt.formatLinkResult(result) }],
+        structuredContent: { ...result },
+      };
     },
   );
 
@@ -162,7 +180,10 @@ async function startServer(): Promise<void> {
     },
     async (input) => {
       const constraint = updateConstraint(input);
-      return { content: [{ type: "text", text: fmt.formatUpdateResult(constraint) }] };
+      return {
+        content: [{ type: "text", text: fmt.formatUpdateResult(constraint) }],
+        structuredContent: { ...constraint },
+      };
     },
   );
 
@@ -175,7 +196,10 @@ async function startServer(): Promise<void> {
     },
     async (input) => {
       const output = exportConstraints(input);
-      return { content: [{ type: "text", text: output }] };
+      return {
+        content: [{ type: "text", text: output }],
+        structuredContent: { format: input.format || "markdown", domain: input.domain || null, output },
+      };
     },
   );
 
@@ -189,7 +213,10 @@ async function startServer(): Promise<void> {
     async (input) => {
       const { patterns } = await import("./tools/patterns.js");
       const results = patterns(input);
-      return { content: [{ type: "text", text: fmt.formatPatternsResult(results) }] };
+      return {
+        content: [{ type: "text", text: fmt.formatPatternsResult(results) }],
+        structuredContent: { count: results.length, patterns: results },
+      };
     },
   );
 
@@ -204,7 +231,10 @@ async function startServer(): Promise<void> {
     async (input) => {
       const { list } = await import("./tools/list.js");
       const result = list(input);
-      return { content: [{ type: "text", text: fmt.formatListResult(result) }] };
+      return {
+        content: [{ type: "text", text: fmt.formatListResult(result) }],
+        structuredContent: { total: result.total, showing: result.rejections.length, rejections: result.rejections },
+      };
     },
   );
 
@@ -215,7 +245,10 @@ async function startServer(): Promise<void> {
     async () => {
       const { stats } = await import("./tools/stats.js");
       const s = stats();
-      return { content: [{ type: "text", text: fmt.formatStatsResult(s) }] };
+      return {
+        content: [{ type: "text", text: fmt.formatStatsResult(s) }],
+        structuredContent: { ...s },
+      };
     },
   );
 
@@ -225,7 +258,10 @@ async function startServer(): Promise<void> {
     {},
     async () => {
       const dbPath = getDbPath();
-      return { content: [{ type: "text", text: `Database: ${dbPath}` }] };
+      return {
+        content: [{ type: "text", text: `Database: ${dbPath}` }],
+        structuredContent: { path: dbPath },
+      };
     },
   );
 
