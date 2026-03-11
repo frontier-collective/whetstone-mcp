@@ -66,11 +66,14 @@ whetstone/
       search.ts         # free-text search across constraints and rejections
       applied.ts        # mark a constraint as applied (usage tracking)
       link.ts           # link existing rejections to a constraint after the fact
+      list.ts           # browse rejections by domain and encoded status
       patterns.ts       # aggregate rejections to surface recurring themes
       stats.ts          # rejection counts, most-applied constraints
       update-constraint.ts # refine, supersede, or deprecate
       export.ts         # dump constraints as markdown or JSON
     cli/
+      dashboard.ts      # web dashboard HTTP server
+      dashboard-html.ts # dashboard HTML, CSS, and client-side JS
       export.ts         # CLI entry point for git hook exports
       format.ts         # shared formatting for MCP and CLI output
       help.ts           # CLI help text
