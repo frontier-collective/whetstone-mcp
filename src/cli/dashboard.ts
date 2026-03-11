@@ -94,6 +94,21 @@ export async function runDashboard(args: string[]): Promise<void> {
           domain: url.searchParams.get("domain") ?? undefined,
           since: url.searchParams.get("since") ?? undefined,
         }));
+      } else if (path.startsWith("/api/rejection/")) {
+        const id = path.slice("/api/rejection/".length);
+        if (!id) { sendJson(res, 400, { error: "Missing rejection ID" }); return; }
+        const db = getDb();
+        const rejection = db.prepare("SELECT * FROM rejections WHERE id = ?").get(id);
+        if (!rejection) { sendJson(res, 404, { error: "Rejection not found" }); return; }
+        sendJson(res, 200, rejection);
+      } else if (path.startsWith("/api/constraint/")) {
+        const id = path.slice("/api/constraint/".length);
+        if (!id) { sendJson(res, 400, { error: "Missing constraint ID" }); return; }
+        const db = getDb();
+        const constraint = db.prepare("SELECT * FROM constraints WHERE id = ?").get(id);
+        if (!constraint) { sendJson(res, 404, { error: "Constraint not found" }); return; }
+        const linkedRejections = db.prepare("SELECT * FROM rejections WHERE constraint_id = ? ORDER BY created_at DESC").all(id);
+        sendJson(res, 200, { ...constraint as Record<string, unknown>, linked_rejections: linkedRejections });
       } else {
         sendJson(res, 404, { error: "Not found" });
       }

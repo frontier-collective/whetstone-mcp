@@ -447,6 +447,185 @@ details .detail-body {
   font-family: var(--font-mono);
 }
 
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 720px;
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg-card);
+  border-radius: 12px 12px 0 0;
+  z-index: 1;
+}
+
+.modal-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.4;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.modal-header .modal-type {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0 0 0 16px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.modal-close:hover { color: var(--text-primary); background: none; }
+
+.modal-body {
+  padding: 20px 24px;
+}
+
+.modal-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.modal-field {
+  margin-bottom: 16px;
+}
+
+.modal-field:last-child { margin-bottom: 0; }
+
+.modal-field .field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  font-family: var(--font-mono);
+}
+
+.modal-field .field-value {
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.modal-field .field-value.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.modal-field .field-value.empty {
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.modal-field .field-value code {
+  background: var(--bg-secondary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.modal-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.modal-tags .tag {
+  display: inline-block;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg-secondary);
+  color: var(--accent);
+  border: 1px solid var(--border);
+}
+
+.modal-linked {
+  margin-top: 8px;
+}
+
+.modal-linked .linked-item {
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  border: 1px solid transparent;
+}
+
+.modal-linked .linked-item:hover {
+  border-color: var(--accent);
+}
+
+.modal-linked .linked-item .linked-desc {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.modal-linked .linked-item .linked-meta {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.modal-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 16px 0;
+}
+
+.clickable { cursor: pointer; }
+.clickable:hover .title { color: var(--accent); }
+
 footer {
   padding: 16px 24px;
   border-top: 1px solid var(--border);
@@ -539,6 +718,10 @@ const BODY = `
     <div id="elevation-list"></div>
   </div>
 </section>
+
+<div id="modal-overlay" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modal-content"></div>
+</div>
 `;
 
 // ── Script ────────────────────────────────────────────────────────────
@@ -576,6 +759,126 @@ function domainBadge(domain) {
 async function fetchJson(path) {
   var res = await fetch(path);
   return res.json();
+}
+
+function formatDate(iso) {
+  if (!iso) return null;
+  try {
+    var d = new Date(iso);
+    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString();
+  } catch(e) { return iso; }
+}
+
+function modalField(label, value, opts) {
+  opts = opts || {};
+  if (!value && !opts.showEmpty) return '';
+  var cls = opts.mono ? ' mono' : '';
+  var val;
+  if (!value) {
+    val = '<div class="field-value empty">—</div>';
+  } else if (opts.code) {
+    val = '<div class="field-value"><code>' + esc(value) + '</code></div>';
+  } else if (opts.html) {
+    val = '<div class="field-value' + cls + '">' + value + '</div>';
+  } else {
+    val = '<div class="field-value' + cls + '">' + esc(value) + '</div>';
+  }
+  return '<div class="modal-field"><div class="field-label">' + esc(label) + '</div>' + val + '</div>';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+async function openRejection(id) {
+  var overlay = document.getElementById('modal-overlay');
+  var content = document.getElementById('modal-content');
+  content.innerHTML = '<div class="modal-body"><div class="empty">Loading...</div></div>';
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  try {
+    var r = await fetchJson('/api/rejection/' + encodeURIComponent(id));
+    var html = '<div class="modal-header"><div><div class="modal-type">Rejection</div><h2>' + esc(r.description) + '</h2></div><button class="modal-close" onclick="closeModal()">\\u00D7</button></div>';
+    html += '<div class="modal-body">';
+    html += '<div class="modal-badges">' + domainBadge(r.domain) + '</div>';
+    html += modalField('Description', r.description);
+    html += modalField('Reasoning', r.reasoning, { showEmpty: true });
+    html += modalField('Raw Output', r.raw_output, { code: true, showEmpty: true });
+    if (r.constraint_id) {
+      html += '<div class="modal-field"><div class="field-label">Encoded By</div><div class="field-value"><a href="#" onclick="event.preventDefault();openConstraint(\\'' + esc(r.constraint_id) + '\\')" style="color:var(--accent);text-decoration:none;font-family:var(--font-mono);font-size:12px">' + esc(r.constraint_id) + ' \\u2192 View constraint</a></div></div>';
+    } else {
+      html += modalField('Encoded By', 'Not yet encoded', { showEmpty: true });
+    }
+    html += '<hr class="modal-divider">';
+    html += modalField('ID', r.id, { mono: true });
+    html += modalField('Created', formatDate(r.created_at), { mono: true });
+    html += '</div>';
+    content.innerHTML = html;
+  } catch(err) {
+    content.innerHTML = '<div class="modal-body"><div class="empty">Error: ' + esc(err.message) + '</div></div>';
+  }
+}
+
+async function openConstraint(id) {
+  var overlay = document.getElementById('modal-overlay');
+  var content = document.getElementById('modal-content');
+  content.innerHTML = '<div class="modal-body"><div class="empty">Loading...</div></div>';
+  overlay.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+
+  try {
+    var c = await fetchJson('/api/constraint/' + encodeURIComponent(id));
+    var html = '<div class="modal-header"><div><div class="modal-type">Constraint</div><h2>' + esc(c.title) + '</h2></div><button class="modal-close" onclick="closeModal()">\\u00D7</button></div>';
+    html += '<div class="modal-body">';
+    html += '<div class="modal-badges">' + domainBadge(c.domain) + severityBadge(c.severity) + '<span class="badge">' + esc(c.category) + '</span><span class="badge">' + esc(c.status) + '</span></div>';
+    html += modalField('Rule', c.rule);
+    html += modalField('Reasoning', c.reasoning, { showEmpty: true });
+    html += modalField('Bad Example', c.rejected_example, { code: true, showEmpty: true });
+    html += modalField('Good Example', c.accepted_example, { code: true, showEmpty: true });
+    // Tags
+    var tags = null;
+    try { tags = c.tags ? JSON.parse(c.tags) : null; } catch(e) { tags = c.tags ? [c.tags] : null; }
+    if (tags && tags.length > 0) {
+      var tagsHtml = '<div class="modal-tags">';
+      for (var t = 0; t < tags.length; t++) tagsHtml += '<span class="tag">' + esc(tags[t]) + '</span>';
+      tagsHtml += '</div>';
+      html += '<div class="modal-field"><div class="field-label">Tags</div>' + tagsHtml + '</div>';
+    } else {
+      html += modalField('Tags', null, { showEmpty: true });
+    }
+    html += modalField('Source', c.source, { showEmpty: true });
+    html += '<hr class="modal-divider">';
+    html += modalField('Times Applied', String(c.times_applied || 0), { mono: true });
+    html += modalField('Last Applied', c.last_applied_at ? formatDate(c.last_applied_at) : null, { mono: true, showEmpty: true });
+    html += modalField('ID', c.id, { mono: true });
+    html += modalField('Created', formatDate(c.created_at), { mono: true });
+    html += modalField('Updated', formatDate(c.updated_at), { mono: true });
+    // Linked rejections
+    var linked = c.linked_rejections || [];
+    if (linked.length > 0) {
+      html += '<hr class="modal-divider">';
+      html += '<div class="modal-field"><div class="field-label">Linked Rejections (' + linked.length + ')</div>';
+      html += '<div class="modal-linked">';
+      for (var i = 0; i < linked.length; i++) {
+        var lr = linked[i];
+        html += '<div class="linked-item" onclick="openRejection(\\'' + esc(lr.id) + '\\')">';
+        html += '<div class="linked-desc">' + esc(lr.description) + '</div>';
+        html += '<div class="linked-meta">' + esc(lr.domain) + ' \\u00B7 ' + timeAgo(lr.created_at) + '</div>';
+        html += '</div>';
+      }
+      html += '</div></div>';
+    }
+    html += '</div>';
+    content.innerHTML = html;
+  } catch(err) {
+    content.innerHTML = '<div class="modal-body"><div class="empty">Error: ' + esc(err.message) + '</div></div>';
+  }
 }
 
 function deltaHtml(n, label) {
@@ -689,15 +992,14 @@ function renderConstraintDetail(c, extraMeta) {
   body += '<div class="detail-field" style="font-family:var(--font-mono);font-size:11px">ID: ' + esc(c.id) + '</div>';
   var hasBody = c.rule || c.reasoning || c.rejected_example || c.accepted_example;
   if (hasBody) {
-    return '<details>' +
+    return '<details class="clickable" onclick="if(!event.target.closest(\\'summary\\')){return}event.preventDefault();openConstraint(\\'' + esc(c.id) + '\\')">' +
       '<summary><div>' +
       '<div class="title">' + esc(c.title) + '</div>' +
       '<div class="meta">' + domainBadge(c.domain) + severityBadge(c.severity) + (extraMeta || '') + '</div>' +
       '</div></summary>' +
-      '<div class="detail-body">' + body + '</div>' +
       '</details>';
   }
-  return '<div class="list-item">' +
+  return '<div class="list-item clickable" onclick="openConstraint(\\'' + esc(c.id) + '\\')">' +
     '<div class="title">' + esc(c.title) + '</div>' +
     '<div class="meta">' + domainBadge(c.domain) + severityBadge(c.severity) + (extraMeta || '') + '</div></div>';
 }
@@ -714,17 +1016,9 @@ function renderUnencoded(listResult) {
   var html = '';
   for (var i = 0; i < visible.length; i++) {
     var r = visible[i];
-    var body = '';
-    if (r.reasoning) body += '<div class="detail-field"><div class="detail-label">Why</div><div>' + esc(r.reasoning) + '</div></div>';
-    if (r.raw_output) body += '<div class="detail-field"><div class="detail-label">Output</div><div>' + esc(r.raw_output.substring(0, 300)) + (r.raw_output.length > 300 ? '...' : '') + '</div></div>';
-    body += '<div class="detail-field" style="font-family:var(--font-mono);font-size:11px">ID: ' + esc(r.id) + '</div>';
-    html += '<details>' +
-      '<summary><div>' +
+    html += '<div class="list-item clickable" onclick="openRejection(\\'' + esc(r.id) + '\\')">' +
       '<div class="title">' + esc(r.description) + '</div>' +
-      '<div class="meta">' + domainBadge(r.domain) + '<span>' + timeAgo(r.created_at) + '</span></div>' +
-      '</div></summary>' +
-      '<div class="detail-body">' + body + '</div>' +
-      '</details>';
+      '<div class="meta">' + domainBadge(r.domain) + '<span>' + timeAgo(r.created_at) + '</span></div></div>';
   }
   if (listResult.total > limit) {
     var remaining = listResult.total - limit;
@@ -744,16 +1038,9 @@ function toggleUnencodedList(btn) {
   for (var i = 0; i < visible.length; i++) {
     var r = visible[i];
     var body = '';
-    if (r.reasoning) body += '<div class="detail-field"><div class="detail-label">Why</div><div>' + esc(r.reasoning) + '</div></div>';
-    if (r.raw_output) body += '<div class="detail-field"><div class="detail-label">Output</div><div>' + esc(r.raw_output.substring(0, 300)) + (r.raw_output.length > 300 ? '...' : '') + '</div></div>';
-    body += '<div class="detail-field" style="font-family:var(--font-mono);font-size:11px">ID: ' + esc(r.id) + '</div>';
-    html += '<details>' +
-      '<summary><div>' +
+    html += '<div class="list-item clickable" onclick="openRejection(\\'' + esc(r.id) + '\\')">' +
       '<div class="title">' + esc(r.description) + '</div>' +
-      '<div class="meta">' + domainBadge(r.domain) + '<span>' + timeAgo(r.created_at) + '</span></div>' +
-      '</div></summary>' +
-      '<div class="detail-body">' + body + '</div>' +
-      '</details>';
+      '<div class="meta">' + domainBadge(r.domain) + '<span>' + timeAgo(r.created_at) + '</span></div></div>';
   }
   var remaining = el._total - (expanded ? 10 : items.length);
   if (expanded) {
@@ -778,7 +1065,7 @@ function renderRecentlyEncoded(s) {
   var html = '';
   for (var i = 0; i < items.length; i++) {
     var r = items[i];
-    html += '<div class="list-item">' +
+    html += '<div class="list-item clickable" onclick="openRejection(\\'' + esc(r.id) + '\\')">' +
       '<div class="title">' + esc(r.description) + '</div>' +
       '<div class="meta">' + domainBadge(r.domain) +
       '<span>' + timeAgo(r.created_at) + '</span></div></div>';
@@ -828,7 +1115,7 @@ function renderGraduation(s) {
   var html = '';
   for (var i = 0; i < items.length; i++) {
     var c = items[i];
-    html += '<div class="list-item">' +
+    html += '<div class="list-item clickable" onclick="openConstraint(\\'' + esc(c.id) + '\\')">' +
       '<div class="title">' + esc(c.title) + '</div>' +
       '<div class="graduation-rule">' + esc(c.rule) + '</div>' +
       '<div class="meta">' + domainBadge(c.domain) + severityBadge(c.severity) +
