@@ -32,8 +32,8 @@ class WhetNav extends WhetBase {
 
     // Logo
     var h1 = document.createElement('h1');
-    h1.className = 'text-xl font-semibold text-primary tracking-tight';
-    h1.innerHTML = 'Whetstone <span class="text-muted font-normal text-sm ml-2">Dashboard</span>';
+    h1.className = 'text-lg font-bold text-primary tracking-tight';
+    h1.innerHTML = 'Whetstone <span class="text-muted font-normal text-xs ml-2 uppercase tracking-widest">Dashboard</span>';
     header.appendChild(h1);
 
     // Nav tabs
@@ -43,8 +43,8 @@ class WhetNav extends WhetBase {
       (function(page) {
         var btn = document.createElement('button');
         var isActive = page === self.currentPage;
-        btn.className = 'bg-transparent border-none border-b-2 rounded-none py-2 px-4 text-[13px] cursor-pointer transition-colors ' +
-          (isActive ? 'text-accent border-b-accent font-semibold' : 'text-muted border-b-transparent hover:text-primary');
+        btn.className = 'border-none py-2 px-4 text-[13px] cursor-pointer transition-all duration-150 rounded-md ' +
+          (isActive ? 'text-accent bg-glow-accent font-semibold' : 'text-muted bg-transparent hover:text-primary hover:bg-raised');
         btn.textContent = page.charAt(0).toUpperCase() + page.slice(1);
         btn.addEventListener('click', function() {
           self.dispatchEvent(new CustomEvent('page-change', { detail: page, bubbles: true }));
@@ -64,7 +64,7 @@ class WhetNav extends WhetBase {
     controls.appendChild(statusSpan);
 
     var refreshBtn = document.createElement('button');
-    refreshBtn.className = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-3 text-xs cursor-pointer font-sans hover:bg-card transition-colors';
+    refreshBtn.className = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-3 text-xs cursor-pointer font-sans hover:bg-card hover:border-edge-hover transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent/30';
     refreshBtn.textContent = 'Refresh';
     refreshBtn.addEventListener('click', function() {
       self.dispatchEvent(new CustomEvent('manual-refresh', { bubbles: true }));
@@ -73,8 +73,8 @@ class WhetNav extends WhetBase {
 
     var autoBtn = document.createElement('button');
     autoBtn.textContent = 'Auto: ' + (this.autoRefresh ? 'ON' : 'OFF');
-    autoBtn.className = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-3 text-xs cursor-pointer font-sans hover:bg-card transition-colors' +
-      (this.autoRefresh ? ' !border-accent !text-accent' : '');
+    autoBtn.className = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-3 text-xs cursor-pointer font-sans hover:bg-card hover:border-edge-hover transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent/30' +
+      (this.autoRefresh ? ' !border-accent !text-accent !bg-glow-accent' : '');
     autoBtn.addEventListener('click', function() {
       self.dispatchEvent(new CustomEvent('toggle-refresh', { bubbles: true }));
     });

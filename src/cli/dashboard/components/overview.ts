@@ -15,25 +15,25 @@ class WhetOverview extends WhetBase {
   }
 
   _template() {
-    return '<section class="grid grid-cols-6 gap-4 mb-6 max-lg:grid-cols-3 max-sm:grid-cols-2" id="stats-cards"></section>' +
-      '<section class="grid grid-cols-2 gap-4 mb-6 max-[900px]:grid-cols-1">' +
+    return '<section class="grid grid-cols-6 gap-3 mb-8 max-lg:grid-cols-3 max-sm:grid-cols-2" id="stats-cards"></section>' +
+      '<section class="grid grid-cols-2 gap-5 mb-8 max-[900px]:grid-cols-1">' +
         '<div class="wh-section !mb-0"><h2>Rejections by Domain</h2><div id="domain-bars"></div></div>' +
         '<div class="wh-section !mb-0"><h2>Most Applied Constraints</h2><div id="applied-list"></div></div>' +
       '</section>' +
-      '<section class="grid grid-cols-2 gap-4 mb-6 max-[900px]:grid-cols-1">' +
+      '<section class="grid grid-cols-2 gap-5 mb-8 max-[900px]:grid-cols-1">' +
         '<div class="wh-section !mb-0"><h2>Unencoded Rejections</h2><div id="unencoded-list"></div></div>' +
         '<div class="wh-section !mb-0"><h2>Recently Encoded</h2><div id="recently-encoded-list"></div></div>' +
       '</section>' +
       '<section class="wh-section" id="patterns-section" style="display:none">' +
-        '<h2>Encode These Next <span class="text-[11px] text-muted font-mono">\\u2014 recurring rejection patterns without constraints</span></h2>' +
+        '<h2>Encode These Next <span class="text-[11px] text-muted font-mono font-normal">\\u2014 recurring rejection patterns without constraints</span></h2>' +
         '<div id="patterns-list"></div>' +
       '</section>' +
-      '<section class="grid grid-cols-2 gap-4 mb-6 max-[900px]:grid-cols-1" id="gaps-graduation-section" style="display:none">' +
-        '<div class="wh-section !mb-0" id="domain-gaps-section"><h2>Domain Gaps <span class="text-[11px] text-muted font-mono">\\u2014 taste being lost</span></h2><div id="domain-gaps-list"></div></div>' +
-        '<div class="wh-section !mb-0" id="graduation-section"><h2>Ready to Graduate <span class="text-[11px] text-muted font-mono">\\u2014 move to CLAUDE.md</span></h2><div id="graduation-list"></div></div>' +
+      '<section class="grid grid-cols-2 gap-5 mb-8 max-[900px]:grid-cols-1" id="gaps-graduation-section" style="display:none">' +
+        '<div class="wh-section !mb-0" id="domain-gaps-section"><h2>Domain Gaps <span class="text-[11px] text-muted font-mono font-normal">\\u2014 taste being lost</span></h2><div id="domain-gaps-list"></div></div>' +
+        '<div class="wh-section !mb-0" id="graduation-section"><h2>Ready to Graduate <span class="text-[11px] text-muted font-mono font-normal">\\u2014 move to CLAUDE.md</span></h2><div id="graduation-list"></div></div>' +
       '</section>' +
-      '<section class="grid grid-cols-2 gap-4 mb-6 max-[900px]:grid-cols-1" id="dead-elevation-section">' +
-        '<div class="wh-section !mb-0" id="dead-section" style="display:none"><h2>Fading Constraints <span class="text-[11px] text-muted font-mono">\\u2014 applied before, silent now</span></h2><div id="dead-list"></div></div>' +
+      '<section class="grid grid-cols-2 gap-5 mb-8 max-[900px]:grid-cols-1" id="dead-elevation-section">' +
+        '<div class="wh-section !mb-0" id="dead-section" style="display:none"><h2>Fading Constraints <span class="text-[11px] text-muted font-mono font-normal">\\u2014 applied before, silent now</span></h2><div id="dead-list"></div></div>' +
         '<div class="wh-section !mb-0"><h2>Elevation Candidates</h2><div id="elevation-list"></div></div>' +
       '</section>';
   }
@@ -231,7 +231,7 @@ class WhetOverview extends WhetBase {
     var html = '';
     for (var i = 0; i < Math.min(patternsData.length, 5); i++) {
       var p = patternsData[i];
-      html += '<div class="p-3 bg-raised rounded-md mb-2 border-l-[3px] border-l-orange">' +
+      html += '<div class="p-4 bg-gradient-to-r from-glow-orange to-transparent rounded-lg mb-3 border border-edge border-l-[3px] border-l-orange">' +
         '<div class="flex justify-between items-center mb-1.5">' +
         domainBadge(p.domain) +
         '<span class="font-mono text-xs text-orange font-semibold">' + p.count + ' similar rejections</span>' +

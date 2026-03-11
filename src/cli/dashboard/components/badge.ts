@@ -17,11 +17,11 @@ class WhetBadge extends WhetBase {
   }
 
   updated() {
-    var base = 'inline-block text-[11px] font-mono px-1.5 mr-2 rounded border';
-    if (this.variant === 'critical') this.className = base + ' border-red text-red';
-    else if (this.variant === 'important') this.className = base + ' border-yellow text-yellow';
-    else if (this.variant === 'preference') this.className = base + ' border-purple text-purple';
-    else this.className = base + ' border-edge text-muted';
+    var base = 'inline-block text-[11px] font-mono font-medium px-2 py-px mr-1.5 rounded-md border';
+    if (this.variant === 'critical') this.className = base + ' border-red/30 text-red bg-glow-red';
+    else if (this.variant === 'important') this.className = base + ' border-yellow/30 text-yellow bg-glow-yellow';
+    else if (this.variant === 'preference') this.className = base + ' border-purple/30 text-purple bg-glow-purple';
+    else this.className = base + ' border-edge text-muted bg-raised';
   }
 
   render() {

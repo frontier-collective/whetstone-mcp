@@ -18,35 +18,32 @@ class WhetConstraints extends WhetBase {
   }
 
   _template() {
-    var selectCls = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-2.5 text-xs font-sans focus:border-accent focus:outline-none';
-    var inputCls = selectCls + ' min-w-[180px]';
-    var btnCls = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-3 text-xs cursor-pointer font-sans hover:bg-card transition-colors';
-    return '<div class="flex gap-2.5 mb-5 flex-wrap items-center">' +
-      '<select id="cf-domain" class="' + selectCls + '" onchange="applyConstraintFilters()"><option value="">All Domains</option></select>' +
-      '<select id="cf-severity" class="' + selectCls + '" onchange="applyConstraintFilters()">' +
+    return '<div class="wh-filter-bar">' +
+      '<select id="cf-domain" class="wh-filter-select" onchange="applyConstraintFilters()"><option value="">All Domains</option></select>' +
+      '<select id="cf-severity" class="wh-filter-select" onchange="applyConstraintFilters()">' +
         '<option value="">All Severities</option>' +
         '<option value="critical">Critical</option>' +
         '<option value="important">Important</option>' +
         '<option value="preference">Preference</option>' +
       '</select>' +
-      '<select id="cf-status" class="' + selectCls + '" onchange="applyConstraintFilters()">' +
+      '<select id="cf-status" class="wh-filter-select" onchange="applyConstraintFilters()">' +
         '<option value="">All Statuses</option>' +
         '<option value="active">Active</option>' +
         '<option value="deprecated">Deprecated</option>' +
         '<option value="superseded">Superseded</option>' +
       '</select>' +
-      '<select id="cf-category" class="' + selectCls + '" onchange="applyConstraintFilters()"><option value="">All Categories</option></select>' +
-      '<select id="cf-sort" class="' + selectCls + '" onchange="applyConstraintFilters()">' +
+      '<select id="cf-category" class="wh-filter-select" onchange="applyConstraintFilters()"><option value="">All Categories</option></select>' +
+      '<select id="cf-sort" class="wh-filter-select" onchange="applyConstraintFilters()">' +
         '<option value="newest">Newest First</option>' +
         '<option value="applied">Most Applied</option>' +
         '<option value="severity">Severity</option>' +
         '<option value="alpha">Alphabetical</option>' +
       '</select>' +
-      '<input type="text" id="cf-search" class="' + inputCls + '" placeholder="Search constraints..." oninput="debounceConstraintSearch()">' +
-      '<button class="' + btnCls + '" onclick="clearConstraintFilters()">Clear</button>' +
+      '<input type="text" id="cf-search" class="wh-filter-input" placeholder="Search constraints..." oninput="debounceConstraintSearch()">' +
+      '<button class="wh-filter-btn" onclick="clearConstraintFilters()">Clear</button>' +
     '</div>' +
-    '<div class="grid grid-cols-7 gap-3 mb-5 max-[900px]:grid-cols-4 max-sm:grid-cols-2" id="constraints-summary"></div>' +
-    '<div id="constraints-count" class="text-xs text-muted mb-3"></div>' +
+    '<div class="grid grid-cols-7 gap-3 mb-6 max-[900px]:grid-cols-4 max-sm:grid-cols-2" id="constraints-summary"></div>' +
+    '<div id="constraints-count" class="text-xs text-muted mb-3 font-mono tracking-wide"></div>' +
     '<div id="constraints-list"></div>';
   }
 
@@ -142,7 +139,7 @@ class WhetConstraints extends WhetBase {
       var staleIndicator = '';
       if (c.status === 'active' && c.times_applied === 0) {
         var ageMs = Date.now() - new Date(c.created_at).getTime();
-        if (ageMs > 7 * 86400000) staleIndicator = ' \\u00B7 <span class="text-yellow" title="Never applied, older than 7 days">stale</span>';
+        if (ageMs > 7 * 86400000) staleIndicator = ' \\u00B7 <span class="text-yellow bg-glow-yellow px-1.5 py-px rounded text-[10px] font-semibold uppercase" title="Never applied, older than 7 days">stale</span>';
       }
 
       // Parse tags
@@ -161,7 +158,7 @@ class WhetConstraints extends WhetBase {
       html += domainBadge(c.domain) + severityBadge(c.severity) + '<whet-badge text="' + esc(c.category) + '"></whet-badge>' + statusBadge;
       if (tagsHtml) html += tagsHtml;
       html += '</div>';
-      html += '<div class="mt-1.5 text-[11px] font-mono text-muted">';
+      html += '<div class="mt-2 pt-2 border-t border-edge-subtle text-[11px] font-mono text-muted">';
       html += appliedText + ' \\u00B7 ' + linkedCount + ' rejection' + (linkedCount !== 1 ? 's' : '') + ' \\u00B7 ' + timeAgo(c.created_at) + staleIndicator;
       html += '</div>';
       html += '</div>';

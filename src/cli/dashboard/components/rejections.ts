@@ -18,29 +18,26 @@ class WhetRejections extends WhetBase {
   }
 
   _template() {
-    var selectCls = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-2.5 text-xs font-sans focus:border-accent focus:outline-none';
-    var inputCls = selectCls + ' min-w-[180px]';
-    var btnCls = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-3 text-xs cursor-pointer font-sans hover:bg-card transition-colors';
-    return '<div class="flex gap-2.5 mb-5 flex-wrap items-center">' +
-      '<select id="rf-domain" class="' + selectCls + '" onchange="applyRejectionFilters()"><option value="">All Domains</option></select>' +
-      '<select id="rf-encoded" class="' + selectCls + '" onchange="applyRejectionFilters()">' +
+    return '<div class="wh-filter-bar">' +
+      '<select id="rf-domain" class="wh-filter-select" onchange="applyRejectionFilters()"><option value="">All Domains</option></select>' +
+      '<select id="rf-encoded" class="wh-filter-select" onchange="applyRejectionFilters()">' +
         '<option value="">All</option>' +
         '<option value="no">Unencoded</option>' +
         '<option value="yes">Encoded</option>' +
       '</select>' +
-      '<select id="rf-sort" class="' + selectCls + '" onchange="applyRejectionFilters()">' +
+      '<select id="rf-sort" class="wh-filter-select" onchange="applyRejectionFilters()">' +
         '<option value="newest">Newest First</option>' +
         '<option value="oldest">Oldest First</option>' +
       '</select>' +
-      '<input type="text" id="rf-search" class="' + inputCls + '" placeholder="Search rejections..." oninput="debounceRejectionSearch()">' +
-      '<button class="' + btnCls + '" onclick="clearRejectionFilters()">Clear</button>' +
+      '<input type="text" id="rf-search" class="wh-filter-input" placeholder="Search rejections..." oninput="debounceRejectionSearch()">' +
+      '<button class="wh-filter-btn" onclick="clearRejectionFilters()">Clear</button>' +
     '</div>' +
-    '<div class="grid grid-cols-4 gap-3 mb-5 max-sm:grid-cols-2" id="rejections-summary"></div>' +
+    '<div class="grid grid-cols-4 gap-3 mb-6 max-sm:grid-cols-2" id="rejections-summary"></div>' +
     '<section class="wh-section" id="rej-patterns-section" style="display:none">' +
-      '<h2>Patterns <span class="text-[11px] text-muted font-mono">\\u2014 recurring themes in unencoded rejections</span></h2>' +
+      '<h2>Patterns <span class="text-[11px] text-muted font-mono font-normal">\\u2014 recurring themes in unencoded rejections</span></h2>' +
       '<div id="rej-patterns-list"></div>' +
     '</section>' +
-    '<div id="rejections-count" class="text-xs text-muted mb-3"></div>' +
+    '<div id="rejections-count" class="text-xs text-muted mb-3 font-mono tracking-wide"></div>' +
     '<div id="rejections-list"></div>';
   }
 
@@ -103,7 +100,7 @@ class WhetRejections extends WhetBase {
     for (var i = 0; i < patternsData.length; i++) {
       var p = patternsData[i];
       html += '<div class="bg-gradient-to-br from-orange/10 to-orange/5 border border-orange rounded-lg py-3 px-4 mb-3 flex items-center gap-2.5">';
-      html += '<div class="bg-orange text-surface rounded-full w-7 h-7 flex items-center justify-center font-bold text-[13px] shrink-0">' + p.count + '</div>';
+      html += '<div class="bg-orange text-surface rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shrink-0 shadow-[0_0_8px_rgba(240,136,62,0.3)]">' + p.count + '</div>';
       html += '<div><div class="text-[13px] text-primary">' + esc(p.theme) + '</div>';
       html += '<div class="text-[11px] text-muted mt-0.5">' + esc(p.domain) + ' \\u00B7 ' + p.count + ' similar rejections \\u00B7 ' + (p.sample_ids ? p.sample_ids.length : 0) + ' samples</div>';
       html += '</div></div>';
@@ -137,7 +134,7 @@ class WhetRejections extends WhetBase {
       html += '<div class="flex flex-wrap gap-1.5 items-center">';
       html += domainBadge(r.domain) + ' ' + encodedHtml;
       html += '</div>';
-      html += '<div class="mt-1.5 text-[11px] font-mono text-muted">' + timeAgo(r.created_at) + '</div>';
+      html += '<div class="mt-2 pt-2 border-t border-edge-subtle text-[11px] font-mono text-muted">' + timeAgo(r.created_at) + '</div>';
       html += '</div>';
     }
     el.innerHTML = html;

@@ -19,21 +19,21 @@ class WhetStatCard extends WhetBase {
   }
 
   updated() {
-    this.className = 'bg-card border border-edge rounded-lg p-5 block';
+    this.className = 'bg-card border border-edge rounded-lg p-5 block transition-all duration-150 shadow-[0_1px_2px_rgba(0,0,0,0.15)] hover:shadow-[0_2px_8px_rgba(0,0,0,0.25)] hover:border-edge-hover';
   }
 
   render() {
     var colorStyle = this.getAttribute('value-color');
     var vc = this.getAttribute('value-class') || '';
     var styleAttr = colorStyle ? ' style="color:' + colorStyle + '"' : '';
-    var valClass = 'text-[32px] font-bold font-mono leading-none mb-1';
+    var valClass = 'text-3xl font-bold font-mono leading-none tracking-tight';
     if (vc === 'warn') valClass += ' text-yellow';
     if (vc === 'good') valClass += ' text-green';
     var h = '<div class="' + valClass + '"' + styleAttr + '>' + esc(this.value) + '</div>';
-    h += '<div class="text-[13px] text-muted uppercase tracking-wide">' + esc(this.label) + '</div>';
+    h += '<div class="text-xs text-muted uppercase tracking-wide mt-1.5">' + esc(this.label) + '</div>';
     if (this.delta) {
       var n = parseFloat(this.delta);
-      var deltaClass = 'text-[11px] font-mono mt-1';
+      var deltaClass = 'text-[11px] font-mono mt-2';
       if (n > 0) deltaClass += ' text-green';
       else if (n < 0) deltaClass += ' text-red';
       else deltaClass += ' text-muted';
