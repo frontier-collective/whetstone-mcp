@@ -22,10 +22,11 @@ export function formatConstraintsList(constraints: Constraint[]): string {
   }
 
   const lines = constraints.map((c) => {
-    let line = `[${c.severity}] ${c.title}\n  Rule: ${c.rule}`;
+    let line = `[${c.severity}] ${c.title} (${c.id})\n  Rule: ${c.rule}`;
     if (c.reasoning) line += `\n  Why: ${c.reasoning}`;
     if (c.rejected_example) line += `\n  Bad: ${c.rejected_example}`;
     if (c.accepted_example) line += `\n  Good: ${c.accepted_example}`;
+    line += `\n  → To mark as applied: use the applied tool with constraint_id="${c.id}"`;
     return line;
   });
 
