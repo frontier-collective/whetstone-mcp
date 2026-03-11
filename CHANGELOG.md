@@ -2,6 +2,11 @@
 
 All notable changes to Whetstone are documented here.
 
+## [0.2.0] - 2026-03-11
+
+
+
+
 ## [0.1.1] - 2026-03-11
 
 - Improve dashboard with 8 enhancements (405124a)
