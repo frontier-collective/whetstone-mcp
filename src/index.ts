@@ -8,6 +8,7 @@ const cliCommand = process.argv[2];
 const TOOL_COMMANDS = new Set([
   "reject", "constrain", "get-constraints", "search",
   "applied", "link", "update-constraint", "patterns", "stats", "list",
+  "db-path",
 ]);
 
 if (cliCommand === "init") {

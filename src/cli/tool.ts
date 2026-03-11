@@ -168,6 +168,11 @@ export async function runTool(command: string, args: string[]): Promise<void> {
         break;
       }
 
+      case "db-path": {
+        console.log(getDbPath());
+        break;
+      }
+
       default:
         console.error(`Unknown tool command: ${command}`);
         process.exit(1);
