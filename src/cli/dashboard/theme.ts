@@ -55,20 +55,235 @@ export const COMPAT_VARS = `
 }
 `;
 
-// Minimal CSS for things Tailwind can't handle:
-// pseudo-elements, -webkit-line-clamp, details markers, transitions, @apply shortcuts
+// ── Pattern library ──────────────────────────────────────────────────
+//
+// Hierarchy:  container → page → grid → section/stat/card → content
+//
+//   .wh-container    Max-width wrapper, centered, responsive horizontal padding
+//   .wh-page         Vertical flex column with consistent gap between siblings
+//
+//   .wh-grid         Single auto-fit grid — items spread evenly
+//   .wh-col-2        Span two grid tracks (for wider items like cards)
+//   .wh-col-full     Span all grid tracks
+//
+//   .wh-section      Boxed content area with heading bar
+//   .wh-stat         Individual stat display (value + label + optional delta)
+//   .wh-card         Clickable content card with hover state
+//   .wh-badge        Inline label (domain, severity, category, status)
+//   .wh-tag          Pill-shaped tag (for user-defined tags)
+//   .wh-list-item    Compact list row inside a section
+//
+//   .wh-filter-bar   Filter toolbar with inputs/selects
+//   .wh-modal-field  Key/value pair inside modal detail views
+//   .wh-empty        Empty-state placeholder
+//
+// Spacing: parent containers own the gap between children.
+// Children never set margin-bottom to space themselves from siblings.
+
 export const CUSTOM_CSS = `
+
+/* ── Reset ── */
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
   background: radial-gradient(ellipse at top, #111820 0%, var(--color-surface) 60%);
 }
 
+/* ── Container ── */
+
+.wh-container {
+  @apply max-w-[1600px] w-full mx-auto px-4 md:px-8 lg:px-10;
+}
+
+/* ── Page layout ── */
+
+.wh-page {
+  @apply flex flex-col gap-8;
+}
+
+/* ── Grid ── */
+/*
+ * One grid class. auto-fit means items always spread evenly:
+ *   6 stats  → 6 columns       2 sections → 2 columns
+ *   4 stats  → 4 columns       1 section  → full width
+ * For wider items (cards), add .wh-col-2 to span two tracks.
+ */
+
+.wh-grid {
+  @apply grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4;
+}
+.wh-col-2 { grid-column: span 2; }
+.wh-col-full { grid-column: 1 / -1; }
+
+@media (max-width: 640px) {
+  .wh-grid { grid-template-columns: 1fr; }
+  .wh-col-2 { grid-column: auto; }
+}
+.wh-flex-row {
+  @apply flex items-center gap-3;
+}
+.wh-flex-wrap {
+  @apply flex flex-wrap gap-2 items-center;
+}
+
+/* ── Stat ── */
+
+.wh-stat {
+  @apply bg-card border border-edge rounded-lg p-5
+         transition-all duration-150
+         shadow-[0_1px_2px_rgba(0,0,0,0.15)]
+         hover:shadow-[0_2px_8px_rgba(0,0,0,0.25)]
+         hover:border-edge-hover;
+}
+.wh-stat-value {
+  @apply text-3xl font-bold font-mono leading-none tracking-tight;
+}
+.wh-stat-value.good { @apply text-green; }
+.wh-stat-value.warn { @apply text-yellow; }
+.wh-stat-label {
+  @apply text-xs text-muted uppercase tracking-wide mt-2;
+}
+.wh-stat-delta {
+  @apply text-[11px] font-mono mt-2;
+}
+
+/* ── Card ── */
+
+.wh-card {
+  @apply bg-card border border-edge rounded-lg p-5 cursor-pointer
+         transition-all duration-150 ease-out
+         shadow-[0_1px_3px_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.12)];
+}
+.wh-card:hover {
+  @apply bg-card-hover border-edge-hover
+         shadow-[0_4px_12px_rgba(0,0,0,0.3),0_2px_4px_rgba(0,0,0,0.2)];
+}
+.wh-card:active { @apply scale-[0.995]; }
+
+/* ── Section ── */
+
+.wh-section {
+  @apply bg-card border border-edge rounded-lg p-6 relative overflow-hidden;
+}
+.wh-section::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--color-edge-hover) 50%, transparent 100%);
+}
+.wh-section h2 {
+  @apply text-xs font-bold uppercase tracking-widest text-muted mb-5 flex items-center gap-2;
+}
+.wh-section h2::before {
+  content: '';
+  width: 3px;
+  height: 14px;
+  background: var(--color-accent);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* ── Badge ── */
+
+.wh-badge {
+  @apply inline-block text-[11px] font-mono font-medium px-2 py-px rounded-md
+         border border-edge text-muted bg-raised;
+}
+.wh-badge-critical { @apply border-red/30 text-red bg-glow-red; }
+.wh-badge-important { @apply border-yellow/30 text-yellow bg-glow-yellow; }
+.wh-badge-preference { @apply border-purple/30 text-purple bg-glow-purple; }
+
+/* ── Tag ── */
+
+.wh-tag {
+  @apply inline-block text-[11px] font-mono px-2 py-1 rounded-full
+         bg-glow-accent text-accent border border-accent/20;
+}
+
+/* ── List ── */
+
+.wh-list-item {
+  @apply py-4 px-3 -mx-3 border-b border-edge-subtle text-sm rounded transition-colors;
+}
+.wh-list-item:hover { @apply bg-raised; }
+.wh-list-item:last-child { @apply border-b-0; }
+
+/* ── Filter bar ── */
+
+.wh-filter-bar {
+  @apply flex gap-3 flex-wrap items-center p-4 bg-raised/50 rounded-lg border border-edge-subtle;
+}
+.wh-filter-select {
+  @apply bg-surface text-primary border border-edge rounded-md py-2 px-3
+         text-xs font-sans transition-colors
+         focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30;
+}
+.wh-filter-input {
+  @apply bg-surface text-primary border border-edge rounded-md py-2 px-3
+         text-xs font-sans min-w-[180px] transition-colors
+         focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30;
+}
+.wh-filter-btn {
+  @apply bg-surface text-muted border border-edge rounded-md py-2 px-3
+         text-xs cursor-pointer font-sans transition-colors
+         hover:text-primary hover:border-edge-hover hover:bg-raised
+         focus:outline-none focus:ring-1 focus:ring-accent/30;
+}
+
+/* ── Modal ── */
+
+.wh-modal-field { @apply mb-5 pb-5 border-b border-edge-subtle; }
+.wh-modal-field:last-child { @apply mb-0 pb-0 border-b-0; }
+.wh-field-label {
+  @apply text-[11px] font-bold text-muted uppercase tracking-widest mb-2 font-mono;
+}
+.wh-field-value {
+  @apply text-sm text-primary leading-relaxed whitespace-pre-wrap break-words;
+}
+.wh-field-value.mono {
+  @apply font-mono text-xs text-muted;
+}
+.wh-field-value.empty {
+  @apply text-muted italic;
+}
+.wh-field-value code {
+  @apply bg-raised py-3 px-3 rounded-md block font-mono text-[13px] leading-normal overflow-x-auto
+         border-l-2 border-l-edge-hover;
+}
+
+/* ── Empty state ── */
+
+.wh-empty {
+  @apply text-muted text-sm py-10 text-center border border-dashed border-edge-subtle rounded-lg;
+}
+
+/* ── Show more button ── */
+
+.wh-show-more {
+  @apply block w-full bg-transparent border-none text-muted p-3 mt-4
+         text-xs cursor-pointer rounded-md transition-colors;
+}
+.wh-show-more:hover {
+  @apply text-accent bg-raised;
+}
+
+/* ── Utilities (pseudo-elements, transitions, clamp) ── */
+
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+.clickable { cursor: pointer; transition: background-color 0.15s; }
+.clickable:hover { background-color: var(--color-raised); border-radius: 6px; }
+.clickable:hover .title { color: var(--color-accent); }
+
+.bar-fill-encoded, .bar-fill-unencoded, .gap-bar-fill {
+  transition: width 0.4s ease;
 }
 
 details summary { list-style: none; }
@@ -97,131 +312,5 @@ details[open] summary::before { transform: rotate(90deg); }
 .pattern-examples div::before {
   content: '\\2022 ';
   color: var(--color-muted);
-}
-
-.clickable { cursor: pointer; transition: background-color 0.15s; }
-.clickable:hover { background-color: var(--color-raised); border-radius: 6px; }
-.clickable:hover .title { color: var(--color-accent); }
-
-.bar-fill-encoded, .bar-fill-unencoded, .gap-bar-fill {
-  transition: width 0.4s ease;
-}
-
-/* ── Semantic @apply classes ── */
-
-.wh-card {
-  @apply bg-card border border-edge rounded-lg p-5 cursor-pointer
-         transition-all duration-150 ease-out
-         shadow-[0_1px_3px_rgba(0,0,0,0.2),0_1px_2px_rgba(0,0,0,0.12)];
-}
-.wh-card:hover {
-  @apply bg-card-hover border-edge-hover
-         shadow-[0_4px_12px_rgba(0,0,0,0.3),0_2px_4px_rgba(0,0,0,0.2)];
-}
-.wh-card:active { @apply scale-[0.995]; }
-
-.wh-list-item {
-  @apply py-4 px-3 -mx-3 border-b border-edge-subtle text-sm rounded transition-colors;
-}
-.wh-list-item:hover { @apply bg-raised; }
-.wh-list-item:last-child { @apply border-b-0; }
-
-.wh-section {
-  @apply bg-card border border-edge rounded-lg p-6 mb-8 relative overflow-hidden;
-}
-.wh-section::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent 0%, var(--color-edge-hover) 50%, transparent 100%);
-}
-
-.wh-section h2 {
-  @apply text-xs font-bold uppercase tracking-widest text-muted mb-5 flex items-center gap-2;
-}
-.wh-section h2::before {
-  content: '';
-  width: 3px;
-  height: 14px;
-  background: var(--color-accent);
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-
-.wh-empty {
-  @apply text-muted text-sm py-10 text-center border border-dashed border-edge-subtle rounded-lg;
-}
-
-.wh-modal-field { @apply mb-5 pb-5 border-b border-edge-subtle; }
-.wh-modal-field:last-child { @apply mb-0 pb-0 border-b-0; }
-.wh-field-label {
-  @apply text-[11px] font-bold text-muted uppercase tracking-widest mb-2 font-mono;
-}
-.wh-field-value {
-  @apply text-sm text-primary leading-relaxed whitespace-pre-wrap break-words;
-}
-.wh-field-value.mono {
-  @apply font-mono text-xs text-muted;
-}
-.wh-field-value.empty {
-  @apply text-muted italic;
-}
-.wh-field-value code {
-  @apply bg-raised py-3 px-3 rounded-md block font-mono text-[13px] leading-normal overflow-x-auto
-         border-l-2 border-l-edge-hover;
-}
-
-.wh-tag {
-  @apply inline-block text-[11px] font-mono px-2 py-1 rounded-full
-         bg-glow-accent text-accent border border-accent/20;
-}
-
-.wh-show-more {
-  @apply block w-full bg-transparent border-none text-muted p-3 mt-4
-         text-xs cursor-pointer rounded-md transition-colors;
-}
-.wh-show-more:hover {
-  @apply text-accent bg-raised;
-}
-
-/* ── Layout grids ── */
-
-.wh-grid-stats {
-  @apply grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-6;
-}
-.wh-grid-cards {
-  @apply grid grid-cols-[repeat(auto-fill,minmax(340px,1fr))] gap-6;
-}
-.wh-grid-panels {
-  @apply grid grid-cols-2 gap-8 mb-10 max-md:grid-cols-1;
-}
-.wh-flex-row {
-  @apply flex items-center gap-3;
-}
-.wh-flex-wrap {
-  @apply flex flex-wrap gap-3 items-center;
-}
-
-/* ── Filter bar classes ── */
-
-.wh-filter-bar {
-  @apply flex gap-3 mb-6 flex-wrap items-center p-4 bg-raised/50 rounded-lg border border-edge-subtle;
-}
-.wh-filter-select {
-  @apply bg-surface text-primary border border-edge rounded-md py-2 px-3
-         text-xs font-sans transition-colors
-         focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30;
-}
-.wh-filter-input {
-  @apply bg-surface text-primary border border-edge rounded-md py-2 px-3
-         text-xs font-sans min-w-[180px] transition-colors
-         focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30;
-}
-.wh-filter-btn {
-  @apply bg-surface text-muted border border-edge rounded-md py-2 px-3
-         text-xs cursor-pointer font-sans transition-colors
-         hover:text-primary hover:border-edge-hover hover:bg-raised
-         focus:outline-none focus:ring-1 focus:ring-accent/30;
 }
 `;

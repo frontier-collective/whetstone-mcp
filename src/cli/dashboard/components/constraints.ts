@@ -18,7 +18,8 @@ class WhetConstraints extends WhetBase {
   }
 
   _template() {
-    return '<div class="wh-filter-bar">' +
+    return '<div class="wh-page">' +
+      '<div class="wh-filter-bar">' +
       '<select id="cf-domain" class="wh-filter-select" onchange="applyConstraintFilters()"><option value="">All Domains</option></select>' +
       '<select id="cf-severity" class="wh-filter-select" onchange="applyConstraintFilters()">' +
         '<option value="">All Severities</option>' +
@@ -42,9 +43,12 @@ class WhetConstraints extends WhetBase {
       '<input type="text" id="cf-search" class="wh-filter-input" placeholder="Search constraints..." oninput="debounceConstraintSearch()">' +
       '<button class="wh-filter-btn" onclick="clearConstraintFilters()">Clear</button>' +
     '</div>' +
-    '<div class="wh-grid-stats mb-8" id="constraints-summary"></div>' +
-    '<div id="constraints-count" class="text-xs text-muted mb-4 font-mono tracking-wide"></div>' +
-    '<div id="constraints-list" class="wh-grid-cards"></div>';
+    '<div class="wh-grid" id="constraints-summary"></div>' +
+    '<div>' +
+      '<div id="constraints-count" class="text-xs text-muted mb-4 font-mono tracking-wide"></div>' +
+      '<div id="constraints-list" class="wh-grid"></div>' +
+    '</div>' +
+    '</div>';
   }
 
   _debounceSearch() {
@@ -111,13 +115,13 @@ class WhetConstraints extends WhetBase {
     for (var j = 0; j < bySev.length; j++) sevMap[bySev[j].severity] = bySev[j].count;
 
     el.innerHTML =
-      '<whet-stat-card value="' + total + '" label="Total"></whet-stat-card>' +
-      '<whet-stat-card value="' + (statusMap.active || 0) + '" label="Active" value-class="good"></whet-stat-card>' +
-      '<whet-stat-card value="' + (statusMap.deprecated || 0) + '" label="Deprecated"></whet-stat-card>' +
-      '<whet-stat-card value="' + (statusMap.superseded || 0) + '" label="Superseded"></whet-stat-card>' +
-      '<whet-stat-card value="' + (sevMap.critical || 0) + '" label="Critical" value-color="var(--color-red)"></whet-stat-card>' +
-      '<whet-stat-card value="' + (sevMap.important || 0) + '" label="Important" value-color="var(--color-yellow)"></whet-stat-card>' +
-      '<whet-stat-card value="' + (sevMap.preference || 0) + '" label="Preference" value-color="var(--color-purple)"></whet-stat-card>';
+      renderStat(total, 'Total') +
+      renderStat(statusMap.active || 0, 'Active', { good: true }) +
+      renderStat(statusMap.deprecated || 0, 'Deprecated') +
+      renderStat(statusMap.superseded || 0, 'Superseded') +
+      renderStat(sevMap.critical || 0, 'Critical', { color: 'var(--color-red)' }) +
+      renderStat(sevMap.important || 0, 'Important', { color: 'var(--color-yellow)' }) +
+      renderStat(sevMap.preference || 0, 'Preference', { color: 'var(--color-purple)' });
   }
 
   _renderList(constraints) {
@@ -133,7 +137,7 @@ class WhetConstraints extends WhetBase {
     var html = '';
     for (var i = 0; i < constraints.length; i++) {
       var c = constraints[i];
-      var statusBadge = c.status !== 'active' ? '<whet-badge text="' + esc(c.status) + '"></whet-badge>' : '';
+      var statusBadge = c.status !== 'active' ? '<span class="wh-badge">' + esc(c.status) + '</span>' : '';
       var linkedCount = c.linked_rejection_count || 0;
       var appliedText = c.times_applied > 0 ? 'Applied ' + c.times_applied + 'x' : 'Never applied';
       var staleIndicator = '';
@@ -151,11 +155,11 @@ class WhetConstraints extends WhetBase {
         }
       } catch(e) {}
 
-      html += '<div class="wh-card" onclick="openConstraint(\\'' + esc(c.id) + '\\')">';
+      html += '<div class="wh-card wh-col-2" onclick="openConstraint(\\'' + esc(c.id) + '\\')">';
       html += '<div class="text-sm font-medium text-primary mb-2">' + esc(c.title) + '</div>';
       html += '<div class="text-[13px] text-muted leading-normal line-clamp-2 mb-3">' + esc(c.rule) + '</div>';
       html += '<div class="wh-flex-wrap">';
-      html += domainBadge(c.domain) + severityBadge(c.severity) + '<whet-badge text="' + esc(c.category) + '"></whet-badge>' + statusBadge;
+      html += domainBadge(c.domain) + severityBadge(c.severity) + '<span class="wh-badge">' + esc(c.category) + '</span>' + statusBadge;
       if (tagsHtml) html += tagsHtml;
       html += '</div>';
       html += '<div class="mt-3 pt-3 border-t border-edge-subtle text-[11px] font-mono text-muted">';

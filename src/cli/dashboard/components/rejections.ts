@@ -18,7 +18,8 @@ class WhetRejections extends WhetBase {
   }
 
   _template() {
-    return '<div class="wh-filter-bar">' +
+    return '<div class="wh-page">' +
+      '<div class="wh-filter-bar">' +
       '<select id="rf-domain" class="wh-filter-select" onchange="applyRejectionFilters()"><option value="">All Domains</option></select>' +
       '<select id="rf-encoded" class="wh-filter-select" onchange="applyRejectionFilters()">' +
         '<option value="">All</option>' +
@@ -32,13 +33,16 @@ class WhetRejections extends WhetBase {
       '<input type="text" id="rf-search" class="wh-filter-input" placeholder="Search rejections..." oninput="debounceRejectionSearch()">' +
       '<button class="wh-filter-btn" onclick="clearRejectionFilters()">Clear</button>' +
     '</div>' +
-    '<div class="wh-grid-stats mb-8" id="rejections-summary"></div>' +
+    '<div class="wh-grid" id="rejections-summary"></div>' +
     '<section class="wh-section" id="rej-patterns-section" style="display:none">' +
       '<h2>Patterns <span class="text-[11px] text-muted font-mono font-normal">\\u2014 recurring themes in unencoded rejections</span></h2>' +
       '<div id="rej-patterns-list"></div>' +
     '</section>' +
-    '<div id="rejections-count" class="text-xs text-muted mb-4 font-mono tracking-wide"></div>' +
-    '<div id="rejections-list" class="wh-grid-cards"></div>';
+    '<div>' +
+      '<div id="rejections-count" class="text-xs text-muted mb-4 font-mono tracking-wide"></div>' +
+      '<div id="rejections-list" class="wh-grid"></div>' +
+    '</div>' +
+    '</div>';
   }
 
   _buildFilterParams() {
@@ -82,10 +86,10 @@ class WhetRejections extends WhetBase {
   _renderSummary(summary) {
     var el = document.getElementById('rejections-summary');
     el.innerHTML =
-      '<whet-stat-card value="' + (summary.total || 0) + '" label="Total"></whet-stat-card>' +
-      '<whet-stat-card value="' + (summary.unencoded || 0) + '" label="Unencoded" value-color="var(--color-yellow)"></whet-stat-card>' +
-      '<whet-stat-card value="' + (summary.encoded || 0) + '" label="Encoded" value-class="good"></whet-stat-card>' +
-      '<whet-stat-card value="' + ((summary.by_domain || []).length) + '" label="Domains"></whet-stat-card>';
+      renderStat(summary.total || 0, 'Total') +
+      renderStat(summary.unencoded || 0, 'Unencoded', { color: 'var(--color-yellow)' }) +
+      renderStat(summary.encoded || 0, 'Encoded', { good: true }) +
+      renderStat((summary.by_domain || []).length, 'Domains');
   }
 
   _renderPatterns(patternsData) {
@@ -128,7 +132,7 @@ class WhetRejections extends WhetBase {
         encodedHtml = '<span class="text-[11px] text-yellow">unencoded</span>';
       }
 
-      html += '<div class="wh-card" onclick="openRejection(\\'' + esc(r.id) + '\\')">';
+      html += '<div class="wh-card wh-col-2" onclick="openRejection(\\'' + esc(r.id) + '\\')">';
       html += '<div class="text-sm font-medium text-primary mb-2">' + esc(r.description) + '</div>';
       if (r.reasoning) html += '<div class="text-[13px] text-muted leading-normal line-clamp-2 mb-3">' + esc(r.reasoning) + '</div>';
       html += '<div class="wh-flex-wrap">';

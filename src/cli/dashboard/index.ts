@@ -4,8 +4,6 @@
 
 import { THEME, COMPAT_VARS, CUSTOM_CSS } from "./theme.js";
 import { BASE_COMPONENT } from "./components/base.js";
-import { STAT_CARD } from "./components/stat-card.js";
-import { BADGE } from "./components/badge.js";
 import { NAV } from "./components/nav.js";
 import { OVERVIEW } from "./components/overview.js";
 import { CONSTRAINTS } from "./components/constraints.js";
@@ -19,8 +17,6 @@ const COMPONENT_SCRIPT = `<script type="module">
 import { LitElement, html, css } from '${LIT_CDN}';
 
 ${BASE_COMPONENT}
-${STAT_CARD}
-${BADGE}
 ${NAV}
 ${OVERVIEW}
 ${CONSTRAINTS}
@@ -30,7 +26,7 @@ ${APP}
 
 export function getDashboardHtml(version: string): string {
   const footer =
-    '\n<footer class="py-6 px-8 border-t border-edge-subtle text-center text-xs text-muted font-mono leading-relaxed">' +
+    '\n<footer class="wh-container py-6 border-t border-edge-subtle text-center text-xs text-muted font-mono leading-relaxed">' +
     '<div>Whetstone MCP v' + version + ' · MIT License</div>' +
     '<div><a class="text-accent no-underline hover:underline transition-colors" href="https://github.com/frontier-collective/whetstone-mcp">GitHub</a> · ' +
     '<a class="text-accent no-underline hover:underline transition-colors" href="https://www.npmjs.com/package/@frontier-collective/whetstone-mcp">npm</a> · ' +
@@ -52,7 +48,7 @@ ${CUSTOM_CSS}
 ${COMPONENT_SCRIPT}
 </head>
 <body class="bg-surface text-primary font-sans min-h-screen flex flex-col">
-<main class="flex-1 px-10 py-10 w-full">
+<main class="flex-1 wh-container py-6 md:py-10">
 ${BODY}
 </main>
 ${footer}
@@ -103,11 +99,32 @@ function timeAgo(iso) {
 }
 
 function severityBadge(sev) {
-  return '<whet-badge text="' + esc(sev) + '" variant="' + esc(sev) + '"></whet-badge>';
+  return '<span class="wh-badge wh-badge-' + esc(sev) + '">' + esc(sev) + '</span>';
 }
 
 function domainBadge(domain) {
-  return '<whet-badge text="' + esc(domain) + '"></whet-badge>';
+  return '<span class="wh-badge">' + esc(domain) + '</span>';
+}
+
+function renderStat(value, label, opts) {
+  opts = opts || {};
+  var valClass = 'wh-stat-value';
+  if (opts.good) valClass += ' good';
+  if (opts.warn) valClass += ' warn';
+  var style = opts.color ? ' style="color:' + opts.color + '"' : '';
+  var h = '<div class="wh-stat">';
+  h += '<div class="' + valClass + '"' + style + '>' + esc(String(value)) + '</div>';
+  h += '<div class="wh-stat-label">' + esc(label) + '</div>';
+  if (opts.delta) {
+    var n = parseFloat(opts.delta);
+    var deltaClass = 'wh-stat-delta';
+    if (n > 0) deltaClass += ' text-green';
+    else if (n < 0) deltaClass += ' text-red';
+    else deltaClass += ' text-muted';
+    h += '<div class="' + deltaClass + '">' + esc(opts.delta) + '</div>';
+  }
+  h += '</div>';
+  return h;
 }
 
 async function fetchJson(path) {
@@ -229,7 +246,7 @@ async function openConstraint(id) {
     html += '<h2 class="text-base font-semibold text-primary leading-snug">' + esc(c.title) + '</h2></div>';
     html += '<button class="bg-transparent border-none text-muted text-xl cursor-pointer ml-4 leading-none shrink-0 hover:text-primary w-8 h-8 rounded-md flex items-center justify-center hover:bg-raised transition-colors" onclick="closeModal()">\\u00D7</button></div>';
     html += '<div class="p-6">';
-    html += '<div class="wh-flex-wrap mb-5">' + domainBadge(c.domain) + severityBadge(c.severity) + '<whet-badge text="' + esc(c.category) + '"></whet-badge><whet-badge text="' + esc(c.status) + '"></whet-badge></div>';
+    html += '<div class="wh-flex-wrap mb-5">' + domainBadge(c.domain) + severityBadge(c.severity) + '<span class="wh-badge">' + esc(c.category) + '</span><span class="wh-badge">' + esc(c.status) + '</span></div>';
     html += modalField('Rule', c.rule);
     html += modalField('Reasoning', c.reasoning, { showEmpty: true });
     html += modalField('Bad Example', c.rejected_example, { code: true, showEmpty: true });

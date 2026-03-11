@@ -15,27 +15,29 @@ class WhetOverview extends WhetBase {
   }
 
   _template() {
-    return '<section class="wh-grid-stats mb-10" id="stats-cards"></section>' +
-      '<section class="wh-grid-panels">' +
-        '<div class="wh-section !mb-0"><h2>Rejections by Domain</h2><div id="domain-bars"></div></div>' +
-        '<div class="wh-section !mb-0"><h2>Most Applied Constraints</h2><div id="applied-list"></div></div>' +
+    return '<div class="wh-page">' +
+      '<section class="wh-grid" id="stats-cards"></section>' +
+      '<section class="wh-grid">' +
+        '<div class="wh-section"><h2>Rejections by Domain</h2><div id="domain-bars"></div></div>' +
+        '<div class="wh-section"><h2>Most Applied Constraints</h2><div id="applied-list"></div></div>' +
       '</section>' +
-      '<section class="wh-grid-panels">' +
-        '<div class="wh-section !mb-0"><h2>Unencoded Rejections</h2><div id="unencoded-list"></div></div>' +
-        '<div class="wh-section !mb-0"><h2>Recently Encoded</h2><div id="recently-encoded-list"></div></div>' +
+      '<section class="wh-grid">' +
+        '<div class="wh-section"><h2>Unencoded Rejections</h2><div id="unencoded-list"></div></div>' +
+        '<div class="wh-section"><h2>Recently Encoded</h2><div id="recently-encoded-list"></div></div>' +
       '</section>' +
       '<section class="wh-section" id="patterns-section" style="display:none">' +
         '<h2>Encode These Next <span class="text-[11px] text-muted font-mono font-normal">\\u2014 recurring rejection patterns without constraints</span></h2>' +
         '<div id="patterns-list"></div>' +
       '</section>' +
-      '<section class="wh-grid-panels" id="gaps-graduation-section" style="display:none">' +
-        '<div class="wh-section !mb-0" id="domain-gaps-section"><h2>Domain Gaps <span class="text-[11px] text-muted font-mono font-normal">\\u2014 taste being lost</span></h2><div id="domain-gaps-list"></div></div>' +
-        '<div class="wh-section !mb-0" id="graduation-section"><h2>Ready to Graduate <span class="text-[11px] text-muted font-mono font-normal">\\u2014 move to CLAUDE.md</span></h2><div id="graduation-list"></div></div>' +
+      '<section class="wh-grid" id="gaps-graduation-section" style="display:none">' +
+        '<div class="wh-section" id="domain-gaps-section"><h2>Domain Gaps <span class="text-[11px] text-muted font-mono font-normal">\\u2014 taste being lost</span></h2><div id="domain-gaps-list"></div></div>' +
+        '<div class="wh-section" id="graduation-section"><h2>Ready to Graduate <span class="text-[11px] text-muted font-mono font-normal">\\u2014 move to CLAUDE.md</span></h2><div id="graduation-list"></div></div>' +
       '</section>' +
-      '<section class="wh-grid-panels" id="dead-elevation-section">' +
-        '<div class="wh-section !mb-0" id="dead-section" style="display:none"><h2>Fading Constraints <span class="text-[11px] text-muted font-mono font-normal">\\u2014 applied before, silent now</span></h2><div id="dead-list"></div></div>' +
-        '<div class="wh-section !mb-0"><h2>Elevation Candidates</h2><div id="elevation-list"></div></div>' +
-      '</section>';
+      '<section class="wh-grid" id="dead-elevation-section">' +
+        '<div class="wh-section" id="dead-section" style="display:none"><h2>Fading Constraints <span class="text-[11px] text-muted font-mono font-normal">\\u2014 applied before, silent now</span></h2><div id="dead-list"></div></div>' +
+        '<div class="wh-section"><h2>Elevation Candidates</h2><div id="elevation-list"></div></div>' +
+      '</section>' +
+      '</div>';
   }
 
   async load() {
@@ -61,19 +63,17 @@ class WhetOverview extends WhetBase {
 
   _renderStatsCards(s) {
     var el = document.getElementById('stats-cards');
-    var unencodedClass = s.unencoded_rejections > 0 ? 'warn' : '';
     var encoded = s.total_rejections - s.unencoded_rejections;
     var coveragePct = s.total_rejections > 0 ? Math.round((encoded / s.total_rejections) * 100) : 0;
-    var coverageClass = coveragePct >= 80 ? 'good' : coveragePct >= 50 ? '' : 'warn';
     var wd = s.week_delta || {};
     var domainCount = (s.rejections_by_domain || []).length;
     el.innerHTML =
-      '<whet-stat-card value="' + s.total_rejections + '" label="Rejections" delta="' + esc(deltaText(wd.rejections, 'this week')) + '"></whet-stat-card>' +
-      '<whet-stat-card value="' + s.total_constraints + '" label="Constraints" delta="' + esc(deltaText(wd.constraints, 'this week')) + '"></whet-stat-card>' +
-      '<whet-stat-card value="' + s.active_constraints + '" label="Active" value-class="good"></whet-stat-card>' +
-      '<whet-stat-card value="' + s.unencoded_rejections + '" label="Unencoded"' + (unencodedClass ? ' value-class="' + unencodedClass + '"' : '') + '></whet-stat-card>' +
-      '<whet-stat-card value="' + coveragePct + '%" label="Coverage"' + (coverageClass ? ' value-class="' + coverageClass + '"' : '') + ' delta="' + esc(deltaText(wd.encoded, 'encoded this week')) + '"></whet-stat-card>' +
-      '<whet-stat-card value="' + domainCount + '" label="Domains"></whet-stat-card>';
+      renderStat(s.total_rejections, 'Rejections', { delta: deltaText(wd.rejections, 'this week') }) +
+      renderStat(s.total_constraints, 'Constraints', { delta: deltaText(wd.constraints, 'this week') }) +
+      renderStat(s.active_constraints, 'Active', { good: true }) +
+      renderStat(s.unencoded_rejections, 'Unencoded', { warn: s.unencoded_rejections > 0 }) +
+      renderStat(coveragePct + '%', 'Coverage', { good: coveragePct >= 80, warn: coveragePct < 50, delta: deltaText(wd.encoded, 'encoded this week') }) +
+      renderStat(domainCount, 'Domains');
   }
 
   _renderDomainBars(s) {

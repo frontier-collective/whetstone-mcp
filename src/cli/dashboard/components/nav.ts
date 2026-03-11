@@ -18,17 +18,17 @@ class WhetNav extends WhetBase {
     this.autoRefresh = true;
   }
 
-  updated() {
-    this.className = '';
-  }
-
   render() {
     var pages = ['overview', 'rejections', 'constraints'];
     var self = this;
     this.innerHTML = '';
+    this.style.display = 'block';
+    this.style.marginBottom = '1rem';
 
     var header = document.createElement('header');
-    header.className = 'flex items-center justify-between mb-8 pb-5 border-b border-edge';
+    header.className = 'flex items-center justify-between border-b border-edge';
+    header.style.paddingTop = '1rem';
+    header.style.paddingBottom = '1rem';
 
     // Logo
     var h1 = document.createElement('h1');
