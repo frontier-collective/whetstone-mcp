@@ -201,7 +201,7 @@ async function openRejection(id) {
     html += modalField('Reasoning', r.reasoning, { showEmpty: true });
     html += modalField('Raw Output', r.raw_output, { code: true, showEmpty: true });
     if (r.constraint_id) {
-      html += '<div class="wh-modal-field"><div class="wh-field-label">Encoded By</div><div class="wh-field-value flex items-center gap-3"><a href="#" onclick="event.preventDefault();openConstraint(\\'' + esc(r.constraint_id) + '\\')" class="text-accent no-underline font-mono text-xs">' + esc(r.constraint_id) + ' \\u2192 View constraint</a><button onclick="unlinkRejection(\\'' + esc(r.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[11px] px-2 py-0.5 cursor-pointer hover:bg-red hover:text-surface transition-colors">Unlink</button></div></div>';
+      html += '<div class="wh-modal-field"><div class="wh-field-label">Encoded By</div><div class="wh-field-value flex items-center gap-3"><a href="#" onclick="event.preventDefault();openConstraint(\\'' + esc(r.constraint_id) + '\\')" class="text-accent no-underline font-mono text-xs">' + esc(r.constraint_id) + ' \\u2192 View constraint</a><button onclick="unlinkRejection(\\'' + esc(r.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[11px] px-2 py-1 cursor-pointer hover:bg-red hover:text-surface transition-colors">Unlink</button></div></div>';
     } else {
       html += modalField('Encoded By', 'Not yet encoded', { showEmpty: true });
     }
@@ -260,11 +260,11 @@ async function openConstraint(id) {
       html += '<div class="mt-3">';
       for (var i = 0; i < linked.length; i++) {
         var lr = linked[i];
-        html += '<div class="py-3 px-4 bg-raised rounded-md mb-2.5 cursor-pointer border border-edge-subtle hover:border-accent hover:bg-card transition-all duration-150" onclick="openRejection(\\'' + esc(lr.id) + '\\')">';
+        html += '<div class="py-3 px-4 bg-raised rounded-md mb-3 cursor-pointer border border-edge-subtle hover:border-accent hover:bg-card transition-all duration-150" onclick="openRejection(\\'' + esc(lr.id) + '\\')">';
         html += '<div class="flex justify-between items-start gap-3">';
         html += '<div><div class="text-[13px] text-primary">' + esc(lr.description) + '</div>';
         html += '<div class="text-[11px] text-muted mt-1">' + esc(lr.domain) + ' \\u00B7 ' + timeAgo(lr.created_at) + '</div></div>';
-        html += '<button onclick="event.stopPropagation();unlinkFromConstraint(\\'' + esc(lr.id) + '\\',\\'' + esc(c.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[10px] px-1.5 py-0.5 cursor-pointer shrink-0 hover:bg-red hover:text-surface transition-colors">Unlink</button>';
+        html += '<button onclick="event.stopPropagation();unlinkFromConstraint(\\'' + esc(lr.id) + '\\',\\'' + esc(c.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[10px] px-2 py-1 cursor-pointer shrink-0 hover:bg-red hover:text-surface transition-colors">Unlink</button>';
         html += '</div></div>';
       }
       html += '</div>';
@@ -274,7 +274,7 @@ async function openConstraint(id) {
     html += '</div>';
     if (linked.length === 0) {
       html += '<div class="text-center py-4">';
-      html += '<button onclick="deleteConstraint(\\'' + esc(c.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[13px] py-2.5 px-5 cursor-pointer hover:bg-red hover:text-surface transition-colors font-medium">Delete Constraint</button>';
+      html += '<button onclick="deleteConstraint(\\'' + esc(c.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[13px] py-3 px-5 cursor-pointer hover:bg-red hover:text-surface transition-colors font-medium">Delete Constraint</button>';
       html += '<div class="text-[11px] text-muted mt-2">No linked rejections \\u2014 safe to delete</div>';
       html += '</div>';
     }
@@ -296,7 +296,7 @@ function deltaText(n, label) {
 function renderConstraintDetail(c, extraMeta) {
   var hasBody = c.rule || c.reasoning || c.rejected_example || c.accepted_example;
   if (hasBody) {
-    return '<details class="clickable py-3.5 border-b border-edge text-sm" onclick="if(!event.target.closest(\\'summary\\')){return}event.preventDefault();openConstraint(\\'' + esc(c.id) + '\\')">' +
+    return '<details class="clickable py-4 border-b border-edge text-sm" onclick="if(!event.target.closest(\\'summary\\')){return}event.preventDefault();openConstraint(\\'' + esc(c.id) + '\\')">' +
       '<summary class="cursor-pointer flex items-start gap-2"><div>' +
       '<div class="title text-primary font-medium">' + esc(c.title) + '</div>' +
       '<div class="meta flex gap-2 items-center flex-wrap text-xs text-muted mt-2">' + domainBadge(c.domain) + severityBadge(c.severity) + (extraMeta || '') + '</div>' +

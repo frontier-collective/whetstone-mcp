@@ -121,7 +121,7 @@ details[open] summary::before { transform: rotate(90deg); }
 .wh-card:active { @apply scale-[0.995]; }
 
 .wh-list-item {
-  @apply py-3.5 px-3 -mx-3 border-b border-edge-subtle text-sm rounded transition-colors;
+  @apply py-4 px-3 -mx-3 border-b border-edge-subtle text-sm rounded transition-colors;
 }
 .wh-list-item:hover { @apply bg-raised; }
 .wh-list-item:last-child { @apply border-b-0; }
@@ -168,12 +168,12 @@ details[open] summary::before { transform: rotate(90deg); }
   @apply text-muted italic;
 }
 .wh-field-value code {
-  @apply bg-raised py-2.5 px-3 rounded-md block font-mono text-[13px] leading-normal overflow-x-auto
+  @apply bg-raised py-3 px-3 rounded-md block font-mono text-[13px] leading-normal overflow-x-auto
          border-l-2 border-l-edge-hover;
 }
 
 .wh-tag {
-  @apply inline-block text-[11px] font-mono px-2 py-0.5 rounded-full
+  @apply inline-block text-[11px] font-mono px-2 py-1 rounded-full
          bg-glow-accent text-accent border border-accent/20;
 }
 
@@ -188,20 +188,20 @@ details[open] summary::before { transform: rotate(90deg); }
 /* ── Filter bar classes ── */
 
 .wh-filter-bar {
-  @apply flex gap-2.5 mb-6 flex-wrap items-center p-3.5 bg-raised/50 rounded-lg border border-edge-subtle;
+  @apply flex gap-3 mb-6 flex-wrap items-center p-4 bg-raised/50 rounded-lg border border-edge-subtle;
 }
 .wh-filter-select {
-  @apply bg-surface text-primary border border-edge rounded-md py-1.5 px-2.5
+  @apply bg-surface text-primary border border-edge rounded-md py-2 px-3
          text-xs font-sans transition-colors
          focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30;
 }
 .wh-filter-input {
-  @apply bg-surface text-primary border border-edge rounded-md py-1.5 px-2.5
+  @apply bg-surface text-primary border border-edge rounded-md py-2 px-3
          text-xs font-sans min-w-[180px] transition-colors
          focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30;
 }
 .wh-filter-btn {
-  @apply bg-surface text-muted border border-edge rounded-md py-1.5 px-3
+  @apply bg-surface text-muted border border-edge rounded-md py-2 px-3
          text-xs cursor-pointer font-sans transition-colors
          hover:text-primary hover:border-edge-hover hover:bg-raised
          focus:outline-none focus:ring-1 focus:ring-accent/30;

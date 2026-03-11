@@ -33,7 +33,7 @@ class WhetStatCard extends WhetBase {
     h += '<div class="text-xs text-muted uppercase tracking-wide mt-2">' + esc(this.label) + '</div>';
     if (this.delta) {
       var n = parseFloat(this.delta);
-      var deltaClass = 'text-[11px] font-mono mt-2.5';
+      var deltaClass = 'text-[11px] font-mono mt-3';
       if (n > 0) deltaClass += ' text-green';
       else if (n < 0) deltaClass += ' text-red';
       else deltaClass += ' text-muted';

@@ -17,7 +17,7 @@ class WhetBadge extends WhetBase {
   }
 
   updated() {
-    var base = 'inline-block text-[11px] font-mono font-medium px-2 py-px mr-1.5 rounded-md border';
+    var base = 'inline-block text-[11px] font-mono font-medium px-2 py-px mr-2 rounded-md border';
     if (this.variant === 'critical') this.className = base + ' border-red/30 text-red bg-glow-red';
     else if (this.variant === 'important') this.className = base + ' border-yellow/30 text-yellow bg-glow-yellow';
     else if (this.variant === 'preference') this.className = base + ' border-purple/30 text-purple bg-glow-purple';

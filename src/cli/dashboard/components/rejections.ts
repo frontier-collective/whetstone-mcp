@@ -99,10 +99,10 @@ class WhetRejections extends WhetBase {
     var html = '';
     for (var i = 0; i < patternsData.length; i++) {
       var p = patternsData[i];
-      html += '<div class="bg-gradient-to-br from-orange/10 to-orange/5 border border-orange rounded-lg py-4 px-5 mb-3 flex items-center gap-3.5">';
+      html += '<div class="bg-gradient-to-br from-orange/10 to-orange/5 border border-orange rounded-lg py-4 px-5 mb-3 flex items-center gap-4">';
       html += '<div class="bg-orange text-surface rounded-full w-8 h-8 flex items-center justify-center font-bold text-sm shrink-0 shadow-[0_0_8px_rgba(240,136,62,0.3)]">' + p.count + '</div>';
       html += '<div><div class="text-[13px] text-primary">' + esc(p.theme) + '</div>';
-      html += '<div class="text-[11px] text-muted mt-0.5">' + esc(p.domain) + ' \\u00B7 ' + p.count + ' similar rejections \\u00B7 ' + (p.sample_ids ? p.sample_ids.length : 0) + ' samples</div>';
+      html += '<div class="text-[11px] text-muted mt-1">' + esc(p.domain) + ' \\u00B7 ' + p.count + ' similar rejections \\u00B7 ' + (p.sample_ids ? p.sample_ids.length : 0) + ' samples</div>';
       html += '</div></div>';
     }
     el.innerHTML = html;

@@ -38,7 +38,7 @@ class WhetNav extends WhetBase {
 
     // Nav tabs
     var nav = document.createElement('nav');
-    nav.className = 'flex gap-1.5';
+    nav.className = 'flex gap-2';
     for (var i = 0; i < pages.length; i++) {
       (function(page) {
         var btn = document.createElement('button');
@@ -64,7 +64,7 @@ class WhetNav extends WhetBase {
     controls.appendChild(statusSpan);
 
     var refreshBtn = document.createElement('button');
-    refreshBtn.className = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-3 text-xs cursor-pointer font-sans hover:bg-card hover:border-edge-hover transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent/30';
+    refreshBtn.className = 'bg-raised text-primary border border-edge rounded-md py-2 px-3 text-xs cursor-pointer font-sans hover:bg-card hover:border-edge-hover transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent/30';
     refreshBtn.textContent = 'Refresh';
     refreshBtn.addEventListener('click', function() {
       self.dispatchEvent(new CustomEvent('manual-refresh', { bubbles: true }));
@@ -73,7 +73,7 @@ class WhetNav extends WhetBase {
 
     var autoBtn = document.createElement('button');
     autoBtn.textContent = 'Auto: ' + (this.autoRefresh ? 'ON' : 'OFF');
-    autoBtn.className = 'bg-raised text-primary border border-edge rounded-md py-1.5 px-3 text-xs cursor-pointer font-sans hover:bg-card hover:border-edge-hover transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent/30' +
+    autoBtn.className = 'bg-raised text-primary border border-edge rounded-md py-2 px-3 text-xs cursor-pointer font-sans hover:bg-card hover:border-edge-hover transition-all duration-150 focus:outline-none focus:ring-1 focus:ring-accent/30' +
       (this.autoRefresh ? ' !border-accent !text-accent !bg-glow-accent' : '');
     autoBtn.addEventListener('click', function() {
       self.dispatchEvent(new CustomEvent('toggle-refresh', { bubbles: true }));

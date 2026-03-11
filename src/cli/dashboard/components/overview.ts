@@ -232,17 +232,17 @@ class WhetOverview extends WhetBase {
     for (var i = 0; i < Math.min(patternsData.length, 5); i++) {
       var p = patternsData[i];
       html += '<div class="p-5 bg-gradient-to-r from-glow-orange to-transparent rounded-lg mb-4 border border-edge border-l-[3px] border-l-orange">' +
-        '<div class="flex justify-between items-center mb-2.5">' +
+        '<div class="flex justify-between items-center mb-3">' +
         domainBadge(p.domain) +
         '<span class="font-mono text-xs text-orange font-semibold">' + p.count + ' similar rejections</span>' +
         '</div>' +
         '<div class="text-xs font-mono text-muted mb-2">Keywords: ' + esc(p.theme) + '</div>' +
         '<div class="pattern-examples text-[13px] text-primary leading-normal">';
       for (var j = 0; j < Math.min(p.descriptions.length, 3); j++) {
-        html += '<div class="py-0.5">' + esc(p.descriptions[j]) + '</div>';
+        html += '<div class="py-1">' + esc(p.descriptions[j]) + '</div>';
       }
       if (p.descriptions.length > 3) {
-        html += '<div class="text-muted italic py-0.5">+' + (p.descriptions.length - 3) + ' more</div>';
+        html += '<div class="text-muted italic py-1">+' + (p.descriptions.length - 3) + ' more</div>';
       }
       html += '</div></div>';
     }

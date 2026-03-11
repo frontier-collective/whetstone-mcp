@@ -139,7 +139,7 @@ class WhetConstraints extends WhetBase {
       var staleIndicator = '';
       if (c.status === 'active' && c.times_applied === 0) {
         var ageMs = Date.now() - new Date(c.created_at).getTime();
-        if (ageMs > 7 * 86400000) staleIndicator = ' \\u00B7 <span class="text-yellow bg-glow-yellow px-1.5 py-px rounded text-[10px] font-semibold uppercase" title="Never applied, older than 7 days">stale</span>';
+        if (ageMs > 7 * 86400000) staleIndicator = ' \\u00B7 <span class="text-yellow bg-glow-yellow px-2 py-px rounded text-[10px] font-semibold uppercase" title="Never applied, older than 7 days">stale</span>';
       }
 
       // Parse tags
