@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import type { Database as DatabaseType, Statement } from "better-sqlite3";
-import { mkdirSync, existsSync } from "fs";
+import { mkdirSync, existsSync, statSync } from "fs";
 import { dirname, resolve } from "path";
 import { runMigrations } from "./migrations.js";
 
@@ -71,6 +71,7 @@ export class DatabaseWrapper {
 
 let db: DatabaseWrapper | null = null;
 let resolvedDbPath: string | null = null;
+let dbInode: number | null = null;
 
 export function getDbPath(): string {
   if (resolvedDbPath) return resolvedDbPath;
@@ -78,12 +79,33 @@ export function getDbPath(): string {
   return resolve(raw);
 }
 
+function isDbStale(): boolean {
+  if (!db || !resolvedDbPath) return false;
+  try {
+    if (!existsSync(resolvedDbPath)) return true;
+    const currentInode = statSync(resolvedDbPath).ino;
+    return currentInode !== dbInode;
+  } catch {
+    return true;
+  }
+}
+
 export function getDb(): DatabaseWrapper {
+  // Reconnect if the file was replaced (e.g. by clear-db)
+  if (db && isDbStale()) {
+    try { db.close(); } catch { /* already gone */ }
+    db = null;
+    dbInode = null;
+  }
+
   if (db) return db;
 
   const raw = process.env.WHETSTONE_DB || ".whetstone/whetstone.db";
   resolvedDbPath = resolve(raw);
   db = new DatabaseWrapper(resolvedDbPath);
+
+  // Track inode so we detect file replacement
+  try { dbInode = statSync(resolvedDbPath).ino; } catch { dbInode = null; }
 
   // Run migrations with foreign keys off
   db.pragma("foreign_keys = OFF");
