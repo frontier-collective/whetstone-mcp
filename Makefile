@@ -5,7 +5,8 @@
 .PHONY: help install setup build dev test clean init \
         version release gh-release npm-publish \
         tool-reject tool-constrain tool-get-constraints tool-search \
-        tool-applied tool-link tool-update-constraint tool-export tool-patterns tool-stats
+        tool-applied tool-link tool-update-constraint tool-export tool-patterns tool-stats tool-list \
+        dashboard
 
 # ─── Colours ──────────────────────────────────────────────────────────
 
@@ -63,6 +64,9 @@ clean: ## Remove dist/ and test database
 
 init: build ## Set up .whetstone/ directory and database
 	@node dist/index.js init
+
+dashboard: build ## Start the web dashboard (PORT= optional)
+	@WHETSTONE_DB=$(DB) node dist/index.js dashboard $(if $(PORT),--port $(PORT))
 
 ##@ Versioning
 
@@ -155,6 +159,7 @@ QUERY  ?= example
 ID     ?= (required)
 RID    ?= (required)
 FORMAT ?= markdown
+STATUS ?= all
 
 tool-reject: build ## Log a rejection (DOMAIN=, DESC=)
 	@printf '  $(YELLOW)reject$(RESET) $(DIM)domain=$(DOMAIN)$(RESET)\n'
@@ -217,6 +222,13 @@ tool-patterns: build ## Surface recurring rejection patterns (DOMAIN= optional)
 	@printf '%s\n%s\n' \
 		'$(INIT)' \
 		'{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"patterns","arguments":{}}}' \
+	| $(SERVER) 2>/dev/null | tail -1 | node scripts/format-response.mjs
+
+tool-list: build ## List rejections (DOMAIN=, STATUS=encoded|unencoded|all)
+	@printf '  $(YELLOW)list$(RESET) $(DIM)domain=$(DOMAIN) status=$(STATUS)$(RESET)\n'
+	@printf '%s\n%s\n' \
+		'$(INIT)' \
+		'{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"list","arguments":{"domain":"$(DOMAIN)","status":"$(STATUS)"}}}' \
 	| $(SERVER) 2>/dev/null | tail -1 | node scripts/format-response.mjs
 
 tool-stats: build ## Get rejection and constraint statistics

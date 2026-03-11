@@ -1,154 +1,89 @@
-import { createRequire } from "module";
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
-import { dirname } from "path";
+import Database from "better-sqlite3";
+import type { Database as DatabaseType, Statement } from "better-sqlite3";
+import { mkdirSync, existsSync } from "fs";
+import { dirname, resolve } from "path";
 import { runMigrations } from "./migrations.js";
 
-// sql.js doesn't have clean ESM exports — use createRequire
-const require = createRequire(import.meta.url);
-const initSqlJs: () => Promise<SqlJsStatic> = require("sql.js");
-
-// Types from sql.js (avoid depending on its .d.ts export path)
-interface SqlJsStatic {
-  Database: new (data?: ArrayLike<number>) => SqlJsDatabase;
-}
-
-interface SqlJsDatabase {
-  run(sql: string, params?: unknown[]): SqlJsDatabase;
-  exec(sql: string): Array<{ columns: string[]; values: unknown[][] }>;
-  prepare(sql: string): SqlJsStatement;
-  getRowsModified(): number;
-  export(): Uint8Array;
-  close(): void;
-}
-
-interface SqlJsStatement {
-  bind(params?: unknown[]): boolean;
-  step(): boolean;
-  getAsObject(): Record<string, unknown>;
-  free(): boolean;
-}
-
-// Load WASM once at module level
-const SQL = await initSqlJs();
-
-// --- Ergonomic wrapper over sql.js's low-level API ---
+// --- Ergonomic wrapper preserving the existing API contract ---
 
 interface RunResult {
   changes: number;
 }
 
 class PreparedStatement {
-  constructor(private wrapper: DatabaseWrapper, private sql: string) {}
+  private stmt: Statement;
+
+  constructor(stmt: Statement) {
+    this.stmt = stmt;
+  }
 
   run(...params: unknown[]): RunResult {
-    const stmt = this.wrapper.rawDb.prepare(this.sql);
-    if (params.length > 0) stmt.bind(params);
-    stmt.step();
-    stmt.free();
-    const changes = this.wrapper.rawDb.getRowsModified();
-    this.wrapper.persistIfNeeded();
-    return { changes };
+    const result = this.stmt.run(...params);
+    return { changes: result.changes };
   }
 
   get(...params: unknown[]): Record<string, unknown> | undefined {
-    const stmt = this.wrapper.rawDb.prepare(this.sql);
-    if (params.length > 0) stmt.bind(params);
-    const result = stmt.step() ? stmt.getAsObject() : undefined;
-    stmt.free();
-    return result;
+    return this.stmt.get(...params) as Record<string, unknown> | undefined;
   }
 
   all(...params: unknown[]): Record<string, unknown>[] {
-    const stmt = this.wrapper.rawDb.prepare(this.sql);
-    if (params.length > 0) stmt.bind(params);
-    const results: Record<string, unknown>[] = [];
-    while (stmt.step()) {
-      results.push(stmt.getAsObject());
-    }
-    stmt.free();
-    return results;
+    return this.stmt.all(...params) as Record<string, unknown>[];
   }
 }
 
 export class DatabaseWrapper {
-  rawDb: SqlJsDatabase;
-  private dbPath: string;
-  private transactionDepth = 0;
+  private rawDb: DatabaseType;
 
   constructor(dbPath: string) {
-    this.dbPath = dbPath;
-    if (existsSync(dbPath)) {
-      const buffer = readFileSync(dbPath);
-      this.rawDb = new SQL.Database(buffer);
-    } else {
-      const dir = dirname(dbPath);
-      if (!existsSync(dir)) {
-        mkdirSync(dir, { recursive: true });
-      }
-      this.rawDb = new SQL.Database();
+    const dir = dirname(dbPath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
     }
+
+    this.rawDb = new Database(dbPath);
+
+    // WAL mode allows concurrent readers (dashboard + MCP server + CLI)
+    this.rawDb.pragma("journal_mode = WAL");
+    // Wait up to 5s if another connection holds a write lock
+    this.rawDb.pragma("busy_timeout = 5000");
   }
 
   prepare(sql: string): PreparedStatement {
-    return new PreparedStatement(this, sql);
+    return new PreparedStatement(this.rawDb.prepare(sql));
   }
 
   exec(sql: string): void {
     this.rawDb.exec(sql);
-    this.persistIfNeeded();
   }
 
   pragma(cmd: string, options?: { simple: true }): unknown {
-    if (options?.simple) {
-      const result = this.rawDb.exec(`PRAGMA ${cmd}`);
-      if (result.length > 0 && result[0].values.length > 0) {
-        return result[0].values[0][0];
-      }
-      return undefined;
-    }
-    this.rawDb.exec(`PRAGMA ${cmd}`);
-    return undefined;
+    return this.rawDb.pragma(cmd, options);
   }
 
   transaction<T>(fn: () => T): () => T {
-    return () => {
-      this.rawDb.run("BEGIN");
-      this.transactionDepth++;
-      try {
-        const result = fn();
-        this.transactionDepth--;
-        this.rawDb.run("COMMIT");
-        this.persistIfNeeded();
-        return result;
-      } catch (e) {
-        this.transactionDepth--;
-        this.rawDb.run("ROLLBACK");
-        throw e;
-      }
-    };
-  }
-
-  persistIfNeeded(): void {
-    if (this.transactionDepth === 0) {
-      const data = this.rawDb.export();
-      writeFileSync(this.dbPath, Buffer.from(data));
-    }
+    return this.rawDb.transaction(fn) as () => T;
   }
 
   close(): void {
-    const data = this.rawDb.export();
-    writeFileSync(this.dbPath, Buffer.from(data));
     this.rawDb.close();
   }
 }
 
 let db: DatabaseWrapper | null = null;
+let resolvedDbPath: string | null = null;
+
+export function getDbPath(): string {
+  if (resolvedDbPath) return resolvedDbPath;
+  const raw = process.env.WHETSTONE_DB || ".whetstone/whetstone.db";
+  return resolve(raw);
+}
 
 export function getDb(): DatabaseWrapper {
   if (db) return db;
 
-  const dbPath = process.env.WHETSTONE_DB || ".whetstone/whetstone.db";
-  db = new DatabaseWrapper(dbPath);
+  const raw = process.env.WHETSTONE_DB || ".whetstone/whetstone.db";
+  resolvedDbPath = resolve(raw);
+  db = new DatabaseWrapper(resolvedDbPath);
 
   // Run migrations with foreign keys off
   db.pragma("foreign_keys = OFF");

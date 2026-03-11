@@ -21,7 +21,7 @@ These are firm constraints, not preferences:
 | Technology | Purpose | Rationale |
 |---|---|---|
 | TypeScript | Server language | Widest MCP SDK support, npm-publishable, most agents use Node-based MCP |
-| sql.js | Database | Pure JS/WASM SQLite — no native compilation, portable, single-file database |
+| better-sqlite3 | Database | Native SQLite bindings — fast, atomic writes, WAL mode for concurrent access |
 | @modelcontextprotocol/sdk | MCP protocol | Standard MCP server implementation |
 | ulid | Identifiers | Sortable, unique, no coordination required |
 
@@ -29,7 +29,7 @@ These are firm constraints, not preferences:
 
 **Why per-project SQLite over a central database?** The database is committed to the repo, so constraints travel with the code and team members get them via git. Each project's taste is self-contained. No cross-project contamination by design.
 
-**Why sql.js over better-sqlite3?** sql.js is pure JavaScript/WASM — no native compilation step. This eliminates `npm install` failures on machines without C++ build tools and makes global installs from GitHub reliable. The trade-off is manual persistence (write to disk after each mutation), handled by the `DatabaseWrapper` in `connection.ts`.
+**Why better-sqlite3 over sql.js?** better-sqlite3 provides atomic writes, WAL mode for concurrent access (dashboard + MCP server), and significantly better performance. It requires a C++ compiler for native compilation, but the target audience is developers who have build tools installed. sql.js (pure WASM) was used initially but its load-entire-file/write-entire-file pattern caused data loss during rapid sequential CLI invocations.
 
 ## Storage
 
