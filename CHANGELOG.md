@@ -2,6 +2,12 @@
 
 All notable changes to Whetstone are documented here.
 
+## [0.3.1] - 2026-03-11
+
+- Fix stale database connection after clear-db (299a10a)
+- Update README with db_path tool, db-path and clear-db commands (da0d656)
+
+
 ## [0.3.0] - 2026-03-11
 
 - Dashboard: add flywheel-driven sections (5bd617c)
