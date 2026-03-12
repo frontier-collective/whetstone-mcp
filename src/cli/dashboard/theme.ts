@@ -205,7 +205,7 @@ body {
 /* ── Badge ── */
 
 .wh-badge {
-  @apply inline-block text-[11px] font-mono font-medium px-2 py-px rounded-md
+  @apply inline-block text-[11px] font-mono font-medium px-2.5 py-1 rounded-md
          border border-edge text-muted bg-raised;
 }
 .wh-badge-critical { @apply border-red/30 text-red bg-glow-red; }
