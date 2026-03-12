@@ -86,6 +86,13 @@ export const CUSTOM_CSS = `
    Do NOT add unlayered resets here — they override Tailwind's
    @layer utilities due to cascade layer precedence. */
 
+.wh-logo-icon {
+  width: 1.4em;
+  height: 1.4em;
+  color: #F59E0B;
+  flex-shrink: 0;
+}
+
 body {
   margin: 0;
   background: radial-gradient(ellipse at top, #111820 0%, var(--color-surface) 60%);
