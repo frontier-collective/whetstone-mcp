@@ -202,6 +202,22 @@ make init          # set up .whetstone/ dir and install git hook
 make help          # show all targets including MCP tool runners
 ```
 
+## Releasing
+
+`make release minor` (or `patch` / `major`) handles the full release flow: bump version, generate changelog, create release branch, merge to master and develop, tag.
+
+The changelog generator (`scripts/changelog.mjs`) uses the Claude API to produce polished, grouped release notes when `ANTHROPIC_API_KEY` (or `CLAUDE_API_KEY`) is set in the environment. Without an API key, it falls back to raw commit messages.
+
+```bash
+# Preview release notes without writing
+ANTHROPIC_API_KEY=sk-... node scripts/changelog.mjs 0.5.0 --dry-run
+
+# Full release (API key optional)
+ANTHROPIC_API_KEY=sk-... make release minor
+```
+
+The API key is never committed — it's expected in the shell environment at release time only.
+
 ## Build Order (MVP)
 
 Build in this order. Each step should be functional before moving to the next.
@@ -333,3 +349,31 @@ Tests should cover:
 - No classes for tool handlers — plain functions
 - Error messages should be human-readable (these surface in agent conversations)
 - No over-engineering — this is a focused tool, not a framework
+- Do not add Co-Authored-By lines to commit messages
+
+## Commit Messages
+
+Follow Conventional Commits with WHET story code prefixes.
+
+**Format:**
+
+```
+[WHET-NNNN] type: short description    # when related to a story
+type: short description                 # when not related to a story
+```
+
+**Types:** `feat`, `fix`, `chore`, `docs`, `refactor`, `test`, `style`, `ci`, `perf`
+
+**Multi-line commits** (when a commit touches multiple concerns):
+
+```
+[WHET-0007] feat: add AI-generated changelog
+chore: add .env.example for API key config
+```
+
+**Rules:**
+- First line under 70 characters
+- Use imperative mood ("add", not "added" or "adds")
+- WHET code goes first when applicable — only if there's a clear match
+- One type prefix per line
+- No trailing periods
