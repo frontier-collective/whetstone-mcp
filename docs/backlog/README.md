@@ -12,6 +12,9 @@ backlog/
     WHET-0001-*.md
     WHET-0002-*.md
     ...
+    implemented/     # completed stories (moved here when done)
+      WHET-0003-*.md
+      ...
 ```
 
 ## Workflow
@@ -39,7 +42,8 @@ Work the story. Update the story file's status as you go: `draft` â†’ `ready` â†
 When a story is done:
 
 1. Set its status to `done` and add a `completed` date in the frontmatter
-2. In `IDEAS.md`, check the box (`- [x]`) and move the line to the **Done** section at the bottom using the format: `` - [x] `WHET-NNNN` (YYYY-MM-DD) Description ``
+2. Move the story file from `stories/` to `stories/implemented/`
+3. In `IDEAS.md`, check the box (`- [x]`) and move the line to the **Done** section at the bottom using the format: `` - [x] `WHET-NNNN` (YYYY-MM-DD) Description ``
 
 ## Story File Template
 
