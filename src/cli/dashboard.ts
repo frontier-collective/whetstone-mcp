@@ -328,9 +328,27 @@ export async function runDashboard(args: string[]): Promise<void> {
 
   const MAX_PORT_ATTEMPTS = 10;
 
+  function onListening(): void {
+    const url = `http://localhost:${port}`;
+    const dbDisplay = process.env.WHETSTONE_DB || ".whetstone/whetstone.db";
+    console.error("");
+    console.error("  \x1b[1m\x1b[33m⬡ Whetstone Dashboard\x1b[0m");
+    console.error("");
+    console.error(`  \x1b[2mURL:\x1b[0m      \x1b[36m${url}\x1b[0m`);
+    console.error(`  \x1b[2mDB:\x1b[0m       ${dbDisplay}`);
+    console.error(`  \x1b[2mPort:\x1b[0m     ${port}`);
+    if (port !== requestedPort) {
+      console.error(`  \x1b[2mNote:\x1b[0m     port ${requestedPort} was in use, using ${port} instead`);
+    }
+    console.error("");
+    console.error("  \x1b[2mPress Ctrl+C to stop.\x1b[0m");
+    console.error("");
+  }
+
   function tryListen(attempt: number): void {
     server.once("error", (err: NodeJS.ErrnoException) => {
       if (err.code === "EADDRINUSE") {
+        server.removeListener("listening", onListening);
         if (attempt >= MAX_PORT_ATTEMPTS) {
           console.error(`Error: ports ${requestedPort}-${port} are all in use.`);
           process.exit(1);
@@ -342,22 +360,8 @@ export async function runDashboard(args: string[]): Promise<void> {
       throw err;
     });
 
-    server.listen(port, () => {
-      const url = `http://localhost:${port}`;
-      const dbDisplay = process.env.WHETSTONE_DB || ".whetstone/whetstone.db";
-      console.error("");
-      console.error("  \x1b[1m\x1b[33m⬡ Whetstone Dashboard\x1b[0m");
-      console.error("");
-      console.error(`  \x1b[2mURL:\x1b[0m      \x1b[36m${url}\x1b[0m`);
-      console.error(`  \x1b[2mDB:\x1b[0m       ${dbDisplay}`);
-      console.error(`  \x1b[2mPort:\x1b[0m     ${port}`);
-      if (port !== requestedPort) {
-        console.error(`  \x1b[2mNote:\x1b[0m     port ${requestedPort} was in use, using ${port} instead`);
-      }
-      console.error("");
-      console.error("  \x1b[2mPress Ctrl+C to stop.\x1b[0m");
-      console.error("");
-    });
+    server.once("listening", onListening);
+    server.listen(port);
   }
 
   tryListen(1);
