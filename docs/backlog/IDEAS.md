@@ -4,7 +4,6 @@ Raw ideas for Whetstone improvements. Graduate to a story file in `stories/` whe
 
 ## Dashboard
 
-- [ ] `WHET-0002` Link rejection to constraint from rejection modal
 - [ ] `WHET-0004` Add pagination or infinite scroll to rejection and constraint lists (currently loads all at once)
 - [ ] `WHET-0006` Domain health drilldown — make domain bars clickable to navigate to filtered views
 - [ ] `WHET-0012` Add keyboard navigation within modals (tab between fields, arrow keys for dropdowns)
@@ -42,4 +41,5 @@ Raw ideas for Whetstone improvements. Graduate to a story file in `stories/` whe
 ## Done
 
 - [x] `WHET-0003` (2026-03-12) Stats cards clickable for cross-navigation and filter toggling
+- [x] `WHET-0002` (2026-03-12) Link rejection to constraint from rejection modal
 - [x] `WHET-0007` (2026-03-12) AI-generated changelog via Claude API during releases

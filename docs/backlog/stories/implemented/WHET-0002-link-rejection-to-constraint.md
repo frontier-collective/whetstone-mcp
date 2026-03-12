@@ -1,9 +1,10 @@
 ---
 id: WHET-0002
 title: Link rejection to constraint from rejection modal
-status: in-progress
+status: done
 priority: high
 created: 2026-03-12
+completed: 2026-03-12
 ---
 
 # WHET-0002: Link rejection to constraint from rejection modal
@@ -18,11 +19,11 @@ Add a "Link to Constraint" action in the rejection modal when the rejection is u
 
 ## Tasks
 
-- [ ] Add `POST /api/rejection/{id}/link` endpoint (accepts `{ constraint_id }`)
-- [ ] Add "Link to Constraint" button/dropdown to rejection modal for unencoded rejections
-- [ ] Populate dropdown with constraints from `/api/constraints/all`
-- [ ] On link, update the modal to show the newly linked constraint
-- [ ] Update linked rejection count in constraint modal if open
+- [x] Add `POST /api/rejection/{id}/link` endpoint (accepts `{ constraint_id }`)
+- [x] Add "Link to Constraint" button/dropdown to rejection modal for unencoded rejections
+- [x] Populate dropdown with constraints from `/api/constraints/all`
+- [x] On link, update the modal to show the newly linked constraint
+- [x] Update linked rejection count in constraint modal if open
 
 ## Notes
 
