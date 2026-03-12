@@ -636,6 +636,100 @@ async function unlinkFromConstraint(rejectionId, constraintId) {
   } catch(err) { alert(err.message); }
 }
 
+async function linkRejection(rejectionId, domain) {
+  var container = document.getElementById('link-target-' + rejectionId);
+  if (!container) return;
+  container.innerHTML = '<span class="text-muted text-xs">Loading constraints...</span>';
+
+  try {
+    var constraints = await fetchJson('/api/constraints/all');
+    var select = document.createElement('select');
+
+    // Add placeholder option
+    var placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Select a constraint...';
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    select.appendChild(placeholder);
+
+    // Group: same-domain first, then others
+    var sameDomain = [];
+    var otherDomain = [];
+    for (var i = 0; i < constraints.length; i++) {
+      if (constraints[i].domain === domain) {
+        sameDomain.push(constraints[i]);
+      } else {
+        otherDomain.push(constraints[i]);
+      }
+    }
+
+    function addConstraintOption(parent, c) {
+      var opt = document.createElement('option');
+      opt.value = c.id;
+      var label = c.title || c.id;
+      if (label.length > 90) label = label.substring(0, 87) + '...';
+      if (c.domain && c.domain !== domain) label += ' [' + c.domain + ']';
+      opt.textContent = label;
+      parent.appendChild(opt);
+    }
+
+    if (sameDomain.length > 0) {
+      var group = document.createElement('optgroup');
+      group.label = domain;
+      for (var i = 0; i < sameDomain.length; i++) addConstraintOption(group, sameDomain[i]);
+      select.appendChild(group);
+    }
+    if (otherDomain.length > 0) {
+      var group = document.createElement('optgroup');
+      group.label = 'Other domains';
+      for (var i = 0; i < otherDomain.length; i++) addConstraintOption(group, otherDomain[i]);
+      select.appendChild(group);
+    }
+
+    container.innerHTML = '';
+    container.appendChild(select);
+
+    var choices = new Choices(select, {
+      searchEnabled: true,
+      shouldSort: false,
+      itemSelectText: '',
+      searchPlaceholderValue: 'Search constraints...',
+    });
+
+    select.addEventListener('change', async function() {
+      var constraintId = select.value;
+      if (!constraintId) return;
+      choices.destroy();
+      container.innerHTML = '<span class="text-muted text-xs">Linking...</span>';
+      try {
+        var res = await fetch('/api/rejection/' + encodeURIComponent(rejectionId) + '/link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ constraint_id: constraintId })
+        });
+        var data = await res.json();
+        if (!res.ok) { alert(data.error || 'Link failed'); }
+        openRejection(rejectionId);
+        refresh();
+      } catch(err) { alert(err.message); openRejection(rejectionId); }
+    });
+
+    select.addEventListener('hideDropdown', function() {
+      setTimeout(function() {
+        if (container.querySelector('.choices') && !container.querySelector('.choices.is-open')) {
+          choices.destroy();
+          container.innerHTML = '<button onclick="linkRejection(\\'' + esc(rejectionId) + '\\', \\'' + esc(domain) + '\\')" class="text-accent border border-accent/30 bg-glow-accent rounded-md text-[11px] px-3 py-1.5 cursor-pointer hover:bg-accent hover:text-surface transition-colors">Link to Constraint</button>';
+        }
+      }, 200);
+    });
+
+    choices.showDropdown();
+  } catch(err) {
+    container.innerHTML = '<span class="text-red text-xs">Error: ' + esc(err.message) + '</span>';
+  }
+}
+
 async function deleteConstraint(constraintId) {
   if (!confirm('Permanently delete this constraint? This cannot be undone.')) return;
   try {
@@ -668,7 +762,7 @@ async function openRejection(id) {
     if (r.constraint_id) {
       html += '<div class="wh-modal-field"><div class="wh-field-label">Encoded By</div><div class="wh-field-value flex items-center gap-3"><a href="#" onclick="event.preventDefault();openConstraint(\\'' + esc(r.constraint_id) + '\\')" class="text-accent no-underline font-mono text-xs">' + esc(r.constraint_id) + ' \\u2192 View constraint</a><button onclick="unlinkRejection(\\'' + esc(r.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[11px] px-3 py-1.5 cursor-pointer hover:bg-red hover:text-surface transition-colors">Unlink</button></div></div>';
     } else {
-      html += modalField('Encoded By', 'Not yet encoded', { showEmpty: true });
+      html += '<div class="wh-modal-field"><div class="wh-field-label">Encoded By</div><div class="wh-field-value" id="link-target-' + esc(r.id) + '"><button onclick="linkRejection(\\'' + esc(r.id) + '\\', \\'' + esc(r.domain) + '\\')" class="text-accent border border-accent/30 bg-glow-accent rounded-md text-[11px] px-3 py-1.5 cursor-pointer hover:bg-accent hover:text-surface transition-colors">Link to Constraint</button></div></div>';
     }
     html += '<hr class="border-none border-t border-edge-subtle">';
     html += modalField('ID', r.id, { mono: true });

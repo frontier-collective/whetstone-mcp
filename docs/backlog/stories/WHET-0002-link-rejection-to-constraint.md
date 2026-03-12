@@ -1,7 +1,7 @@
 ---
 id: WHET-0002
 title: Link rejection to constraint from rejection modal
-status: ready
+status: in-progress
 priority: high
 created: 2026-03-12
 ---
