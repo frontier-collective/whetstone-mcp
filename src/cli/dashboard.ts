@@ -175,6 +175,8 @@ export async function runDashboard(args: string[]): Promise<void> {
         sendJson(res, 200, patterns({
           domain: url.searchParams.get("domain") ?? undefined,
           since: url.searchParams.get("since") ?? undefined,
+          include_encoded: url.searchParams.get("include_encoded") === "true",
+          suggest_constraints: true,
         }));
       } else if (path.startsWith("/api/rejection/")) {
         const parts = path.slice("/api/rejection/".length).split("/");
