@@ -102,7 +102,7 @@ class WhetOverview extends WhetBase {
         '<div class="w-[120px] text-right text-[13px] font-mono text-muted shrink-0">' + esc(d.domain) + '</div>' +
         '<div class="flex-1 h-[22px] bg-raised rounded overflow-hidden flex">' +
           (encodedPct > 0 ? '<div class="bar-fill-encoded bar-segment-click h-full bg-green" data-filter="yes" style="width:' + encodedPct + '%" title="' + encodedCount + ' encoded"></div>' : '') +
-          (unencodedPct > 0 ? '<div class="bar-fill-unencoded bar-segment-click h-full bg-accent" data-filter="no" style="width:' + unencodedPct + '%" title="' + unencodedCount + ' unencoded"></div>' : '') +
+          (unencodedPct > 0 ? '<div class="bar-fill-unencoded bar-segment-click h-full bg-orange" data-filter="no" style="width:' + unencodedPct + '%" title="' + unencodedCount + ' unencoded"></div>' : '') +
         '</div>' +
         '<div class="w-[60px] text-[13px] font-mono text-muted">' + encodedCount + '/' + d.count + '</div>' +
         '</div>';

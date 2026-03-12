@@ -443,7 +443,7 @@ details[open] summary::before { transform: rotate(90deg); }
   vertical-align: middle;
 }
 .bar-legend .legend-encoded::before { background: var(--color-green); }
-.bar-legend .legend-unencoded::before { background: var(--color-accent); }
+.bar-legend .legend-unencoded::before { background: var(--color-orange); }
 
 .pattern-examples div::before {
   content: '\\2022 ';
