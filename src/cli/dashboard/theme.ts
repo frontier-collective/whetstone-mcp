@@ -87,8 +87,8 @@ export const CUSTOM_CSS = `
    @layer utilities due to cascade layer precedence. */
 
 .wh-logo-icon {
-  width: 1.4em;
-  height: 1.4em;
+  width: 36px;
+  height: 28px;
   color: #F59E0B;
   flex-shrink: 0;
 }
