@@ -142,19 +142,29 @@ function renderStat(value, label, opts) {
   return h;
 }
 
+function setFilterValue(elId, value) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  if (el._choices) {
+    el._choices.setChoiceByValue(value);
+  } else {
+    el.value = value;
+  }
+}
+
 function navigateWithFilters(page, filters) {
   var app = document.querySelector('whet-app');
   app.switchPage(page);
   filters = filters || {};
   setTimeout(function() {
     if (page === 'rejections') {
-      if (filters.encoded) { var el = document.getElementById('rf-encoded'); if (el) el.value = filters.encoded; }
-      if (filters.domain) { var el = document.getElementById('rf-domain'); if (el) el.value = filters.domain; }
+      if (filters.encoded) setFilterValue('rf-encoded', filters.encoded);
+      if (filters.domain) setFilterValue('rf-domain', filters.domain);
       if (typeof applyRejectionFilters === 'function') applyRejectionFilters();
     } else if (page === 'constraints') {
-      if (filters.status) { var el = document.getElementById('cf-status'); if (el) el.value = filters.status; }
-      if (filters.severity) { var el = document.getElementById('cf-severity'); if (el) el.value = filters.severity; }
-      if (filters.domain) { var el = document.getElementById('cf-domain'); if (el) el.value = filters.domain; }
+      if (filters.status) setFilterValue('cf-status', filters.status);
+      if (filters.severity) setFilterValue('cf-severity', filters.severity);
+      if (filters.domain) setFilterValue('cf-domain', filters.domain);
       if (typeof applyConstraintFilters === 'function') applyConstraintFilters();
     }
   }, 100);
@@ -165,13 +175,8 @@ function toggleConstraintFilter(field, value) {
   if (!elId) return;
   var el = document.getElementById(elId);
   if (!el) return;
-  var current = el.value;
-  var newVal = (current === value) ? '' : value;
-  if (el._choices) {
-    el._choices.setChoiceByValue(newVal);
-  } else {
-    el.value = newVal;
-  }
+  var newVal = (el.value === value) ? '' : value;
+  setFilterValue(elId, newVal);
   if (typeof applyConstraintFilters === 'function') applyConstraintFilters();
 }
 
@@ -180,13 +185,8 @@ function toggleRejectionFilter(field, value) {
   if (!elId) return;
   var el = document.getElementById(elId);
   if (!el) return;
-  var current = el.value;
-  var newVal = (current === value) ? '' : value;
-  if (el._choices) {
-    el._choices.setChoiceByValue(newVal);
-  } else {
-    el.value = newVal;
-  }
+  var newVal = (el.value === value) ? '' : value;
+  setFilterValue(elId, newVal);
   if (typeof applyRejectionFilters === 'function') applyRejectionFilters();
 }
 
