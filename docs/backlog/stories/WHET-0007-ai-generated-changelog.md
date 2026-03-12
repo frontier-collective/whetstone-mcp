@@ -1,9 +1,10 @@
 ---
 id: WHET-0007
 title: AI-generated changelog via Claude API
-status: draft
+status: done
 priority: medium
 created: 2026-03-12
+completed: 2026-03-12
 ---
 
 # WHET-0007: AI-generated changelog via Claude API
@@ -35,13 +36,13 @@ Enhance the changelog script to call the Claude API with commit messages and dif
 
 ## Tasks
 
-- [ ] Add `@anthropic-ai/sdk` as a dev dependency
-- [ ] Update `scripts/changelog.mjs` to gather commits + diff stat since last tag
-- [ ] Add Claude API call with release notes prompt
-- [ ] Graceful fallback when `ANTHROPIC_API_KEY` is not set
-- [ ] Add `--dry-run` flag to preview without writing
-- [ ] Test with a real release cycle
-- [ ] Document the `ANTHROPIC_API_KEY` env var in README/CLAUDE.md
+- [x] Add `@anthropic-ai/sdk` as a dev dependency
+- [x] Update `scripts/changelog.mjs` to gather commits + diff stat since last tag
+- [x] Add Claude API call with release notes prompt
+- [x] Graceful fallback when `ANTHROPIC_API_KEY` is not set
+- [x] Add `--dry-run` flag to preview without writing
+- [x] Test with a real release cycle
+- [x] Document the `ANTHROPIC_API_KEY` env var in CLAUDE.md
 
 ## Notes
 

@@ -33,7 +33,6 @@ Raw ideas for Whetstone improvements. Graduate to a story file in `stories/` whe
 
 ## Infrastructure
 
-- [ ] `WHET-0007` AI-generated changelog via Claude API during releases
 - [ ] `WHET-0008` WebSocket support for real-time dashboard updates instead of polling
 - [ ] `WHET-0009` Database backup command
 - [ ] `WHET-0010` Import constraints from another project's whetstone database
@@ -43,4 +42,4 @@ Raw ideas for Whetstone improvements. Graduate to a story file in `stories/` whe
 
 ## Done
 
-<!-- Move completed ideas here with [x] checked. Note why (graduated to story, dropped, etc.) -->
+- [x] `WHET-0007` AI-generated changelog via Claude API during releases — done
