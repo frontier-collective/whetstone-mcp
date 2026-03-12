@@ -417,10 +417,9 @@ textarea.wh-inline-edit-code {
 /* ── Active domain highlight ── */
 
 .domain-bar-active {
+  box-shadow: inset 3px 0 0 var(--color-accent);
   background: var(--color-glow-accent);
-  border-radius: 6px;
-  padding: 4px 0;
-  margin: -4px 0;
+  border-radius: 0 6px 6px 0;
 }
 
 details summary { list-style: none; }
