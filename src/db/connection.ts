@@ -1,6 +1,6 @@
 import Database from "better-sqlite3";
 import type { Database as DatabaseType, Statement } from "better-sqlite3";
-import { mkdirSync, existsSync, statSync } from "fs";
+import { mkdirSync, existsSync, statSync, unlinkSync } from "fs";
 import { dirname, resolve } from "path";
 import { runMigrations } from "./migrations.js";
 
@@ -90,6 +90,24 @@ function isDbStale(): boolean {
   }
 }
 
+/**
+ * Remove stale WAL/SHM files before opening the database.
+ * These are transient runtime files — if no process has the db open,
+ * leftover ones (from a crash or killed process) can cause SQLITE_IOERR.
+ */
+function cleanStaleWalFiles(dbPath: string): void {
+  for (const suffix of ["-shm", "-wal"]) {
+    const filePath = dbPath + suffix;
+    try {
+      if (existsSync(filePath)) {
+        unlinkSync(filePath);
+      }
+    } catch {
+      // Best-effort — if we can't remove them, let SQLite try anyway
+    }
+  }
+}
+
 export function getDb(): DatabaseWrapper {
   // Reconnect if the file was replaced (e.g. by clear-db)
   if (db && isDbStale()) {
@@ -102,6 +120,10 @@ export function getDb(): DatabaseWrapper {
 
   const raw = process.env.WHETSTONE_DB || ".whetstone/whetstone.db";
   resolvedDbPath = resolve(raw);
+
+  // Clean up stale WAL/SHM files that can cause SQLITE_IOERR
+  cleanStaleWalFiles(resolvedDbPath);
+
   db = new DatabaseWrapper(resolvedDbPath);
 
   // Track inode so we detect file replacement
