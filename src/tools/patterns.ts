@@ -3,6 +3,7 @@ import { getDb } from "../db/connection.js";
 export interface PatternsInput {
   domain?: string;
   since?: string;
+  include_encoded?: boolean;
 }
 
 export interface PatternCluster {
@@ -11,6 +12,9 @@ export interface PatternCluster {
   count: number;
   rejection_ids: string[];
   descriptions: string[];
+  velocity: number;          // ratio of recent vs older rejection frequency (>1 = accelerating)
+  leaky_constraint_id?: string;  // if set, these encoded rejections keep recurring despite this constraint
+  leaky_constraint_title?: string;
 }
 
 // ── Stop words ───────────────────────────────────────────────────────
@@ -252,6 +256,8 @@ interface RejectionRow {
   domain: string;
   description: string;
   reasoning: string | null;
+  created_at: string;
+  constraint_id: string | null;
 }
 
 function rejectionText(item: RejectionRow): string {
@@ -322,12 +328,95 @@ function clusterBySimilarity(
 // on TF-IDF vectors produces tighter, more meaningful scores.
 const SIMILARITY_THRESHOLD = 0.15;
 
+// ── Velocity ─────────────────────────────────────────────────────────
+
+// Compute velocity: ratio of recent rejection rate vs older rate.
+// Splits the time window into a "recent" period (last 25%) and "older" (first 75%).
+// velocity > 1 means rejections are accelerating; < 1 means decelerating.
+function computeVelocity(cluster: RejectionRow[], sinceMs: number, nowMs: number): number {
+  const windowMs = nowMs - sinceMs;
+  if (windowMs <= 0) return 1;
+
+  // Split point: 75% of the way through the window
+  const recentCutoff = sinceMs + windowMs * 0.75;
+  const olderDurationDays = (recentCutoff - sinceMs) / (24 * 60 * 60 * 1000);
+  const recentDurationDays = (nowMs - recentCutoff) / (24 * 60 * 60 * 1000);
+
+  if (olderDurationDays <= 0 || recentDurationDays <= 0) return 1;
+
+  let olderCount = 0;
+  let recentCount = 0;
+  for (const item of cluster) {
+    const ts = new Date(item.created_at).getTime();
+    if (ts >= recentCutoff) {
+      recentCount++;
+    } else {
+      olderCount++;
+    }
+  }
+
+  const olderRate = olderCount / olderDurationDays;
+  const recentRate = recentCount / recentDurationDays;
+
+  // Avoid division by zero — if no older rejections, any recent ones = high velocity
+  if (olderRate === 0) return recentCount > 0 ? 5 : 1;
+
+  return Math.round((recentRate / olderRate) * 100) / 100;
+}
+
+// ── Leaky constraint detection ──────────────────────────────────────
+
+interface ConstraintInfo {
+  id: string;
+  title: string;
+}
+
+// Find clusters of encoded rejections that share the same constraint — these
+// are "leaky" constraints that aren't preventing the rejections they encode.
+function findLeakyConstraints(
+  cluster: RejectionRow[],
+  db: ReturnType<typeof getDb>,
+): { constraint_id: string; title: string } | undefined {
+  // Count which constraint_id appears most in this cluster
+  const constraintCounts = new Map<string, number>();
+  for (const item of cluster) {
+    if (item.constraint_id) {
+      constraintCounts.set(item.constraint_id, (constraintCounts.get(item.constraint_id) ?? 0) + 1);
+    }
+  }
+
+  if (constraintCounts.size === 0) return undefined;
+
+  // Find the most common constraint
+  let maxId = "";
+  let maxCount = 0;
+  for (const [id, count] of constraintCounts) {
+    if (count > maxCount) {
+      maxId = id;
+      maxCount = count;
+    }
+  }
+
+  // Only flag as leaky if the constraint accounts for a majority of the cluster
+  if (maxCount < Math.ceil(cluster.length * 0.5)) return undefined;
+
+  const row = db.prepare("SELECT title FROM constraints WHERE id = ?").get(maxId) as ConstraintInfo | undefined;
+  return row ? { constraint_id: maxId, title: row.title } : undefined;
+}
+
 export function patterns(input: PatternsInput): PatternCluster[] {
   const db = getDb();
-  const since = input.since ?? new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const nowMs = Date.now();
+  const since = input.since ?? new Date(nowMs - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const sinceMs = new Date(since).getTime();
 
-  const conditions = ["constraint_id IS NULL", "created_at >= ?"];
+  const conditions = ["created_at >= ?"];
   const params: unknown[] = [since];
+
+  // By default only unencoded; with include_encoded, get all rejections
+  if (!input.include_encoded) {
+    conditions.push("constraint_id IS NULL");
+  }
 
   if (input.domain) {
     conditions.push("domain = ?");
@@ -335,7 +424,7 @@ export function patterns(input: PatternsInput): PatternCluster[] {
   }
 
   const rows = db.prepare(`
-    SELECT id, domain, description, reasoning
+    SELECT id, domain, description, reasoning, created_at, constraint_id
     FROM rejections
     WHERE ${conditions.join(" AND ")}
     ORDER BY domain, created_at DESC
@@ -366,17 +455,31 @@ export function patterns(input: PatternsInput): PatternCluster[] {
       // Gather TF-IDF vectors for this cluster's members
       const clusterVecs = cluster.map((item) => tfidfVecs[idToIdx.get(item.id)!]);
       const theme = extractTheme(clusterVecs, idf);
+      const velocity = computeVelocity(cluster, sinceMs, nowMs);
 
-      results.push({
+      const result: PatternCluster = {
         domain,
         theme,
         count: cluster.length,
         rejection_ids: cluster.map((c) => c.id),
         descriptions: cluster.map((c) => c.description),
-      });
+        velocity,
+      };
+
+      // Check for leaky constraints (only relevant when include_encoded is set)
+      if (input.include_encoded) {
+        const leaky = findLeakyConstraints(cluster, db);
+        if (leaky) {
+          result.leaky_constraint_id = leaky.constraint_id;
+          result.leaky_constraint_title = leaky.title;
+        }
+      }
+
+      results.push(result);
     }
   }
 
-  results.sort((a, b) => b.count - a.count);
+  // Sort by velocity × count (urgent recurring patterns first)
+  results.sort((a, b) => (b.velocity * b.count) - (a.velocity * a.count));
   return results;
 }

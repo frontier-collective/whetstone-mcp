@@ -89,17 +89,49 @@ Each cluster gets a human-readable theme label derived from its most distinctive
 
 The top 5 candidates by score become the theme, with bigram underscores replaced by spaces for readability.
 
-### 6. Output
+### 6. Velocity
 
-Results are sorted by cluster size (largest first) and returned as:
+Each cluster gets a **velocity** score indicating whether rejections are accelerating or decelerating over the time window.
+
+The time window is split into two periods:
+- **Older period** — the first 75% of the window
+- **Recent period** — the last 25% of the window
+
+The rejection rate (count / days) is computed for each period. Velocity is the ratio:
+
+```
+velocity = recent_rate / older_rate
+```
+
+| Velocity | Interpretation |
+|----------|----------------|
+| > 3.0 | Accelerating rapidly — urgent pattern |
+| > 1.5 | Accelerating — growing problem |
+| ~1.0 | Steady rate |
+| < 0.5 | Decelerating — fading pattern |
+
+If there are no older rejections but some recent ones, velocity caps at 5.0. If both periods are empty, velocity defaults to 1.0.
+
+### 7. Leaky constraint detection
+
+When `include_encoded` is set, the pipeline also clusters **encoded** rejections (those already linked to a constraint). This surfaces "leaky" constraints — constraints that exist but aren't preventing the rejections they encode.
+
+For each cluster of encoded rejections, the system checks which constraint appears most frequently among the cluster members. If a single constraint accounts for 50% or more of the cluster, it's flagged as leaky. The output includes the constraint ID and title so the user can investigate and strengthen the constraint.
+
+### 8. Output
+
+Results are sorted by `velocity × count` (urgent accelerating patterns first) and returned as:
 
 ```typescript
 interface PatternCluster {
-  domain: string;        // The domain these rejections belong to
-  theme: string;         // Human-readable label (e.g. "error handl, valid")
-  count: number;         // Number of rejections in this cluster
-  rejection_ids: string[]; // IDs for linking to a future constraint
-  descriptions: string[];  // The rejection descriptions, for quick scanning
+  domain: string;              // The domain these rejections belong to
+  theme: string;               // Human-readable label (e.g. "error handl, valid")
+  count: number;               // Number of rejections in this cluster
+  rejection_ids: string[];     // IDs for linking to a future constraint
+  descriptions: string[];      // The rejection descriptions, for quick scanning
+  velocity: number;            // Temporal velocity (>1 = accelerating, <1 = decelerating)
+  leaky_constraint_id?: string;   // If set, the constraint that isn't preventing these
+  leaky_constraint_title?: string; // Human-readable title of the leaky constraint
 }
 ```
 
@@ -109,6 +141,7 @@ interface PatternCluster {
 |-----------|---------|-------------|
 | `domain` | all | Filter to a specific domain |
 | `since` | 30 days ago | ISO date string, only include rejections after this date |
+| `include_encoded` | false | Also cluster encoded rejections to detect leaky constraints |
 
 Internal constants (not exposed as parameters):
 
@@ -119,15 +152,15 @@ Internal constants (not exposed as parameters):
 | Theme frequency threshold | 50% | Tokens must appear in this fraction of cluster members |
 | Theme max tokens | 5 | Maximum tokens in the theme label |
 | Bigram boost | 2x | Multiplier for bigram scores in theme extraction |
+| Velocity split | 75/25 | Older vs recent period split for velocity calculation |
+| Leaky threshold | 50% | Minimum fraction of cluster linked to same constraint |
 
 ## Complexity
 
-Pairwise comparison is O(n^2) where n is the number of unencoded rejections per domain. TF-IDF computation is O(n × v) where v is the vocabulary size. Both are fine for typical workloads (dozens to low hundreds of rejections per domain per month). For very large datasets, a future optimization could use locality-sensitive hashing (LSH) to approximate nearest neighbors.
+Pairwise comparison is O(n^2) where n is the number of rejections per domain (unencoded only by default, or all when `include_encoded` is set). TF-IDF computation is O(n × v) where v is the vocabulary size. Both are fine for typical workloads (dozens to low hundreds of rejections per domain per month). For very large datasets, a future optimization could use locality-sensitive hashing (LSH) to approximate nearest neighbors.
 
 ## Future enhancements
 
-Planned improvements (see Phase 3-4 in the development roadmap):
+Planned improvements (see Phase 4 in the development roadmap):
 
-- **Temporal velocity** — Flag clusters where rejection frequency is accelerating
-- **Leaky constraint detection** — Also cluster encoded rejections to find constraints that aren't working
 - **Suggested constraint drafts** — Auto-generate a constraint title and rule from each cluster

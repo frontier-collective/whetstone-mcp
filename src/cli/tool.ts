@@ -145,6 +145,7 @@ export async function runTool(command: string, args: string[]): Promise<void> {
         const result = patterns({
           domain: flags.get("domain"),
           since: flags.get("since"),
+          include_encoded: flags.get("include-encoded") === "true",
         });
         console.log(formatPatternsResult(result));
         break;

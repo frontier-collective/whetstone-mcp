@@ -210,10 +210,11 @@ async function startServer(): Promise<void> {
 
   server.tool(
     "patterns",
-    "Surface clusters of similar rejections that haven't been encoded as constraints yet. Groups rejections by textual similarity within each domain — the 'you keep saying the same no' detector.",
+    "Surface clusters of similar rejections that haven't been encoded as constraints yet. Groups rejections by textual similarity within each domain — the 'you keep saying the same no' detector. Results are sorted by velocity × count (urgent accelerating patterns first).",
     {
       domain: z.string().optional().describe("Filter by domain"),
       since: z.string().optional().describe("ISO date — only look at rejections since this date (default: last 30 days)"),
+      include_encoded: z.boolean().optional().describe("Also include encoded rejections to detect 'leaky' constraints — constraints that aren't preventing recurring rejections"),
     },
     async (input) => {
       const { patterns } = await import("./tools/patterns.js");
