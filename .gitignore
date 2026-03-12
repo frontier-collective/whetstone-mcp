@@ -7,3 +7,4 @@ dist/
 *.db-shm
 # Dashboard signal file (transient, used for real-time update notifications)
 .whetstone/.signal
+.macheterc
