@@ -34,8 +34,11 @@ class WhetNav extends WhetBase {
 
     // Logo
     var h1 = document.createElement('h1');
-    h1.className = 'text-lg font-bold text-primary tracking-tight flex items-center gap-2';
+    h1.className = 'text-lg font-bold text-primary tracking-tight flex items-center gap-2 cursor-pointer';
     h1.innerHTML = '${LOGO_SVG_INLINE} Whetstone <span class="text-muted font-normal text-xs ml-2 uppercase tracking-widest">Dashboard</span>';
+    h1.addEventListener('click', function() {
+      self.dispatchEvent(new CustomEvent('page-change', { detail: 'overview', bubbles: true }));
+    });
     header.appendChild(h1);
 
     // Nav tabs (hidden on mobile, shown desktop)
