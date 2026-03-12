@@ -325,9 +325,17 @@ function startSelectEdit(el, entityId, field, currentValue, options) {
   });
   el._choices = choices;
 
-  // Stop Escape from bubbling to the global modal-close handler
+  // Escape: close dropdown and restore value without closing the modal
   el.addEventListener('keydown', function _escTrap(e) {
-    if (e.key === 'Escape') { e.stopPropagation(); el.removeEventListener('keydown', _escTrap); }
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      el.removeEventListener('keydown', _escTrap);
+      if (el._choices) {
+        el._choices.destroy();
+        el._choices = null;
+      }
+      renderFieldValue(el, currentValue);
+    }
   });
 
   select.addEventListener('change', function() {
@@ -403,9 +411,17 @@ async function startDomainEdit(el, entityId, currentValue) {
   });
   el._choices = choices;
 
-  // Stop Escape from bubbling to the global modal-close handler
+  // Escape: close dropdown and restore value without closing the modal
   el.addEventListener('keydown', function _escTrap(e) {
-    if (e.key === 'Escape') { e.stopPropagation(); el.removeEventListener('keydown', _escTrap); }
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      el.removeEventListener('keydown', _escTrap);
+      if (el._choices) {
+        el._choices.destroy();
+        el._choices = null;
+      }
+      renderFieldValue(el, currentValue);
+    }
   });
 
   // Dynamically add the typed value as a selectable choice so clicking works.
