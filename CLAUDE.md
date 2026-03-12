@@ -349,3 +349,4 @@ Tests should cover:
 - No classes for tool handlers — plain functions
 - Error messages should be human-readable (these surface in agent conversations)
 - No over-engineering — this is a focused tool, not a framework
+- Do not add Co-Authored-By lines to commit messages
