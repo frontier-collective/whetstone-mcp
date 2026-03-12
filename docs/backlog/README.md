@@ -16,10 +16,30 @@ backlog/
 
 ## Workflow
 
-1. **Capture** — Add ideas to `IDEAS.md` as checkbox items (`- [ ]`). Quick and low-friction.
-2. **Graduate** — When an idea is worth pursuing, create a story file in `stories/` using the template below. Check the box (`- [x]`) and move the idea to the **Done** section at the bottom of `IDEAS.md`.
-3. **Implement** — Work the story. Update status as you go.
-4. **Complete** — Change story status to `done` and add a completion date.
+### 1. Capture
+
+Add ideas to `IDEAS.md` as checkbox items (`- [ ]`). Keep it low-friction — a sentence or two is fine. Group under the appropriate section heading (Dashboard, Pattern Detection, MCP Tools, Infrastructure).
+
+### 2. Graduate to Story
+
+When an idea is worth pursuing:
+
+1. Create a story file in `stories/` using the template below with the next available `WHET-NNNN` ID
+2. Add the `WHET-NNNN` code to the idea in `IDEAS.md` (e.g. `- [ ] \`WHET-0007\` My idea description`)
+3. Ideas with story codes stay in the main list — they move to Done only when the story is complete or dropped
+
+Stories that don't originate from IDEAS.md should still be added to the relevant section in IDEAS.md with their code, at the top of that section.
+
+### 3. Implement
+
+Work the story. Update the story file's status as you go: `draft` → `ready` → `in-progress` → `done`. Check off tasks in the story's task list as they're completed.
+
+### 4. Complete
+
+When a story is done:
+
+1. Set its status to `done` and add a `completed` date in the frontmatter
+2. In `IDEAS.md`, check the box (`- [x]`) and move the line to the **Done** section at the bottom with a note (e.g. "graduated to WHET-0003", "dropped — no longer relevant")
 
 ## Story File Template
 
@@ -55,8 +75,10 @@ Any additional context, references, or decisions.
 
 ## Conventions
 
-- Story IDs use the format `WHET-NNNN` starting at `WHET-0001`
+- Story IDs use the format `WHET-NNNN`, sequential starting at `WHET-0001`
 - File names: `WHET-{NNNN}-{kebab-case-title}.md`
-- Status flow: `draft` -> `ready` -> `in-progress` -> `done`
+- Status flow: `draft` → `ready` → `in-progress` → `done`
 - Stories can be `dropped` if they're no longer relevant
-- Keep IDEAS.md loose — no formatting requirements beyond bullet points
+- Keep IDEAS.md loose — a sentence or two per idea, no formatting requirements beyond checkboxes
+- Ideas with story codes are sorted to the top of their section in IDEAS.md
+- The Done section in IDEAS.md is a flat list — no category grouping needed
