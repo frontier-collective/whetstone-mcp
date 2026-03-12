@@ -4,14 +4,10 @@ Raw ideas for Whetstone improvements. Graduate to a story file in `stories/` whe
 
 ## Dashboard
 
-- [ ] `WHET-0002` Link rejection to constraint from rejection modal
-- [ ] `WHET-0003` Stats cards should be clickable — clicking "Unencoded" should navigate to rejections page filtered to unencoded
 - [ ] `WHET-0004` Add pagination or infinite scroll to rejection and constraint lists (currently loads all at once)
-- [ ] `WHET-0006` Domain health drilldown — make domain bars clickable to navigate to filtered views
-- [ ] `WHET-0012` Add keyboard navigation within modals (tab between fields, arrow keys for dropdowns)
 - [ ] Add bulk operations — select multiple rejections to link to a constraint at once
 - [ ] Show constraint rule preview on hover in rejection cards (where it shows the linked constraint name)
-- [ ] Add a "recently changed" indicator to constraint cards when updated_at is recent
+- [ ] Add a "recently changed" indicator to constraint cards when updated_at is recent and not equal to created_at
 - [ ] Add export button to constraint modal — copy as markdown for pasting into CLAUDE.md
 - [ ] Dark mode support
 - [ ] Add a "duplicate constraint" action for creating variants
@@ -33,7 +29,7 @@ Raw ideas for Whetstone improvements. Graduate to a story file in `stories/` whe
 
 ## Infrastructure
 
-- [ ] `WHET-0008` WebSocket support for real-time dashboard updates instead of polling
+
 - [ ] `WHET-0009` Database backup command
 - [ ] `WHET-0010` Import constraints from another project's whetstone database
 - [ ] Add API response caching with ETag/If-None-Match
@@ -42,4 +38,10 @@ Raw ideas for Whetstone improvements. Graduate to a story file in `stories/` whe
 
 ## Done
 
+- [x] `WHET-0003` (2026-03-12) Stats cards clickable for cross-navigation and filter toggling
+- [x] `WHET-0002` (2026-03-12) Link rejection to constraint from rejection modal
 - [x] `WHET-0007` (2026-03-12) AI-generated changelog via Claude API during releases
+- [x] `WHET-0008` (2026-03-12) WebSocket support for real-time dashboard updates
+- [x] `WHET-0013` (2026-03-12) Create favicon and logo
+- [x] `WHET-0006` (2026-03-12) Domain health drilldown — clickable bars, tooltips, badges
+- [x] `WHET-0012` (2026-03-12) Keyboard navigation within modals

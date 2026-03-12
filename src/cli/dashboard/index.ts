@@ -9,6 +9,7 @@ import { OVERVIEW } from "./components/overview.js";
 import { CONSTRAINTS } from "./components/constraints.js";
 import { REJECTIONS } from "./components/rejections.js";
 import { APP } from "./components/app.js";
+import { FAVICON_ICO_B64, APPLE_TOUCH_ICON_B64 } from "./favicon.js";
 
 const LIT_CDN = "https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js";
 const TAILWIND_CDN = "https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4";
@@ -41,6 +42,8 @@ export function getDashboardHtml(version: string): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Whetstone Dashboard</title>
+<link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,${FAVICON_ICO_B64}">
+<link rel="apple-touch-icon" sizes="180x180" href="data:image/png;base64,${APPLE_TOUCH_ICON_B64}">
 <script src="${TAILWIND_CDN}"></script>
 <link rel="stylesheet" href="${CHOICES_CSS_CDN}">
 <script src="${CHOICES_JS_CDN}"></script>
@@ -70,7 +73,7 @@ const BODY = `
 <whet-app></whet-app>
 
 <template id="app-template">
-<whet-nav current-page="overview" status="Loading..." auto-refresh></whet-nav>
+<whet-nav current-page="overview" status="Loading..."></whet-nav>
 
 <whet-overview id="page-overview" class="page"></whet-overview>
 <whet-rejections id="page-rejections" class="page" style="display:none"></whet-rejections>
@@ -107,8 +110,11 @@ function severityBadge(sev) {
   return '<span class="wh-badge wh-badge-' + esc(sev) + '">' + esc(sev) + '</span>';
 }
 
-function domainBadge(domain) {
-  return '<span class="wh-badge">' + esc(domain) + '</span>';
+function domainBadge(domain, clickable) {
+  if (clickable === false) {
+    return '<span class="wh-badge">' + esc(domain) + '</span>';
+  }
+  return '<span class="wh-badge wh-badge-domain" data-drill-domain="' + esc(domain) + '" title="View ' + esc(domain) + ' rejections">' + esc(domain) + '</span>';
 }
 
 function renderStat(value, label, opts) {
@@ -117,7 +123,17 @@ function renderStat(value, label, opts) {
   if (opts.good) valClass += ' good';
   if (opts.warn) valClass += ' warn';
   var style = opts.color ? ' style="color:' + opts.color + '"' : '';
-  var h = '<div class="wh-stat">';
+  var clickable = opts.href ? ' wh-stat-clickable' : '';
+  var onclick = '';
+  var dataAttrs = '';
+  if (opts.href && opts.href.toggle) {
+    var toggleFn = opts.href.page === 'rejections' ? 'toggleRejectionFilter' : 'toggleConstraintFilter';
+    onclick = ' onclick="' + toggleFn + '(\\'' + opts.href.toggle.field + '\\', \\'' + opts.href.toggle.value + '\\')"';
+    dataAttrs = ' data-toggle-field="' + opts.href.toggle.field + '" data-toggle-value="' + opts.href.toggle.value + '"';
+  } else if (opts.href) {
+    onclick = ' onclick="navigateWithFilters(\\'' + opts.href.page + '\\', ' + JSON.stringify(opts.href.filters || {}).replace(/"/g, "'") + ')"';
+  }
+  var h = '<div class="wh-stat' + clickable + '"' + onclick + dataAttrs + '>';
   h += '<div class="' + valClass + '"' + style + '>' + esc(String(value)) + '</div>';
   h += '<div class="wh-stat-label">' + esc(label) + '</div>';
   if (opts.delta) {
@@ -130,6 +146,57 @@ function renderStat(value, label, opts) {
   }
   h += '</div>';
   return h;
+}
+
+function setFilterValue(elId, value) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  if (el._choices) {
+    el._choices.setChoiceByValue(value);
+  } else {
+    el.value = value;
+  }
+}
+
+var _lastDrilldownDomain = null;
+
+function navigateWithFilters(page, filters) {
+  var app = document.querySelector('whet-app');
+  app.switchPage(page);
+  filters = filters || {};
+  if (filters.domain) _lastDrilldownDomain = filters.domain;
+  setTimeout(function() {
+    if (page === 'rejections') {
+      if (filters.encoded) setFilterValue('rf-encoded', filters.encoded);
+      if (filters.domain) setFilterValue('rf-domain', filters.domain);
+      if (typeof applyRejectionFilters === 'function') applyRejectionFilters();
+    } else if (page === 'constraints') {
+      if (filters.status) setFilterValue('cf-status', filters.status);
+      if (filters.severity) setFilterValue('cf-severity', filters.severity);
+      if (filters.domain) setFilterValue('cf-domain', filters.domain);
+      if (typeof applyConstraintFilters === 'function') applyConstraintFilters();
+    }
+  }, 100);
+}
+
+function toggleConstraintFilter(field, value) {
+  var elId = field === 'status' ? 'cf-status' : field === 'severity' ? 'cf-severity' : null;
+  if (!elId) return;
+  var el = document.getElementById(elId);
+  if (!el) return;
+  var newVal = (el.value === value) ? '' : value;
+  setFilterValue(elId, newVal);
+  if (typeof applyConstraintFilters === 'function') applyConstraintFilters();
+}
+
+function toggleRejectionFilter(field, value) {
+  var elId = field === 'encoded' ? 'rf-encoded' : field === 'domain' ? 'rf-domain' : null;
+  if (!elId) return;
+  var el = document.getElementById(elId);
+  if (!el) return;
+  var newVal = (el.value === value) ? '' : value;
+  setFilterValue(elId, newVal);
+  if (typeof applyRejectionFilters === 'function') applyRejectionFilters();
 }
 
 async function fetchJson(path) {
@@ -175,7 +242,7 @@ function editableField(entityId, fieldName, label, value, opts) {
   if (!value) {
     displayVal = '<span class="empty">\\u2014</span>';
   } else if (fieldName === 'domain') {
-    displayVal = domainBadge(value);
+    displayVal = domainBadge(value, false);
   } else if (fieldName === 'severity') {
     displayVal = severityBadge(value);
   } else if (fieldName === 'status' || fieldName === 'category') {
@@ -199,7 +266,7 @@ function editableField(entityId, fieldName, label, value, opts) {
   var codeAttr = opts.code ? ' data-code="true"' : '';
   return '<div class="wh-modal-field">' +
     '<div class="wh-field-label">' + esc(label) + '</div>' +
-    '<div class="wh-field-value wh-field-editable" data-field="' + fieldName + '" data-id="' + entityId + '" data-entity="' + entity + '" data-tag="' + tag + '"' + codeAttr + ' data-value="' + dataVal + '" onclick="startEdit(this)">' +
+    '<div class="wh-field-value wh-field-editable" tabindex="0" data-field="' + fieldName + '" data-id="' + entityId + '" data-entity="' + entity + '" data-tag="' + tag + '"' + codeAttr + ' data-value="' + dataVal + '" onclick="startEdit(this)">' +
     displayVal + '</div></div>';
 }
 
@@ -230,7 +297,7 @@ function startEdit(el) {
   if (tag !== 'textarea') input.select();
   input.addEventListener('blur', function() { saveField(el, id, field, input.value); });
   input.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') { e.preventDefault(); renderFieldValue(el, value); }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); renderFieldValue(el, value); }
     if (e.key === 'Enter' && tag !== 'textarea') { e.preventDefault(); input.blur(); }
   });
 }
@@ -257,6 +324,19 @@ function startSelectEdit(el, entityId, field, currentValue, options) {
     itemSelectText: '',
   });
   el._choices = choices;
+
+  // Escape: close dropdown and restore value without closing the modal
+  el.addEventListener('keydown', function _escTrap(e) {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      el.removeEventListener('keydown', _escTrap);
+      if (el._choices) {
+        el._choices.destroy();
+        el._choices = null;
+      }
+      renderFieldValue(el, currentValue);
+    }
+  });
 
   select.addEventListener('change', function() {
     var newVal = select.value;
@@ -330,6 +410,19 @@ async function startDomainEdit(el, entityId, currentValue) {
     duplicateItemsAllowed: false,
   });
   el._choices = choices;
+
+  // Escape: close dropdown and restore value without closing the modal
+  el.addEventListener('keydown', function _escTrap(e) {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      el.removeEventListener('keydown', _escTrap);
+      if (el._choices) {
+        el._choices.destroy();
+        el._choices = null;
+      }
+      renderFieldValue(el, currentValue);
+    }
+  });
 
   // Dynamically add the typed value as a selectable choice so clicking works.
   // On each keystroke, rebuild the full choice list = base domains + optional custom entry.
@@ -440,12 +533,17 @@ function startTagsEdit(el, entityId, currentValue) {
       addTag(textInput.value);
       textInput.value = '';
       textInput.placeholder = '';
+    } else if (e.key === 'Tab' && !textInput.value.trim()) {
+      // Empty input: save tags and let focus advance to next field
+      e.preventDefault();
+      saveTags();
     }
     if (e.key === 'Backspace' && textInput.value === '' && tags.length > 0) {
       removeTag(tags.length - 1);
     }
     if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
       cleanup();
       renderFieldValue(el, currentValue);
     }
@@ -496,7 +594,7 @@ function renderFieldValue(el, value) {
   if (!value) {
     el.innerHTML = '<span class="empty">\\u2014</span>';
   } else if (field === 'domain') {
-    el.innerHTML = domainBadge(value);
+    el.innerHTML = domainBadge(value, false);
   } else if (field === 'severity') {
     el.innerHTML = severityBadge(value);
   } else if (field === 'status' || field === 'category') {
@@ -515,6 +613,10 @@ function renderFieldValue(el, value) {
     el.innerHTML = '<code>' + esc(value) + '</code>';
   } else {
     el.textContent = value;
+  }
+  // Return focus to the field container for continued keyboard navigation
+  if (el.classList.contains('wh-field-editable') && el.hasAttribute('tabindex')) {
+    requestAnimationFrame(function() { el.focus(); });
   }
 }
 
@@ -556,6 +658,55 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') closeModal();
 });
 
+// Keyboard activation: Enter/Space on a focused editable field triggers edit mode.
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' || e.key === ' ') {
+    var el = document.activeElement;
+    if (el && el.classList && el.classList.contains('wh-field-editable')) {
+      e.preventDefault();
+      startEdit(el);
+    }
+  }
+});
+
+// Focus trap: keep Tab cycling within the modal when it's open.
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Tab') return;
+  var overlay = document.getElementById('modal-overlay');
+  if (!overlay || overlay.style.display === 'none') return;
+  var content = document.getElementById('modal-content');
+  if (!content) return;
+  var focusable = content.querySelectorAll('[tabindex], button, a[href], input, textarea, select, [contenteditable]');
+  var items = [];
+  for (var i = 0; i < focusable.length; i++) {
+    if (focusable[i].offsetParent !== null && !focusable[i].disabled) items.push(focusable[i]);
+  }
+  if (items.length === 0) return;
+  var first = items[0];
+  var last = items[items.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  } else if (!content.contains(document.activeElement)) {
+    e.preventDefault();
+    first.focus();
+  }
+});
+
+// Global delegated click handler for domain badge drilldowns.
+// Uses capture phase so it fires BEFORE parent inline onclick handlers.
+document.addEventListener('click', function(e) {
+  var badge = e.target.closest('[data-drill-domain]');
+  if (badge) {
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    navigateWithFilters('rejections', { domain: badge.getAttribute('data-drill-domain') });
+  }
+}, true);
+
 async function unlinkRejection(rejectionId) {
   if (!confirm('Unlink this rejection from its constraint?')) return;
   try {
@@ -578,10 +729,115 @@ async function unlinkFromConstraint(rejectionId, constraintId) {
   } catch(err) { alert(err.message); }
 }
 
+async function linkRejection(rejectionId, domain) {
+  var container = document.getElementById('link-target-' + rejectionId);
+  if (!container) return;
+  container.innerHTML = '<span class="text-muted text-xs">Loading constraints...</span>';
+
+  try {
+    var constraints = await fetchJson('/api/constraints/all');
+    var select = document.createElement('select');
+
+    // Add placeholder option
+    var placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Select a constraint...';
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    select.appendChild(placeholder);
+
+    // Group: same-domain first, then others
+    var sameDomain = [];
+    var otherDomain = [];
+    for (var i = 0; i < constraints.length; i++) {
+      if (constraints[i].domain === domain) {
+        sameDomain.push(constraints[i]);
+      } else {
+        otherDomain.push(constraints[i]);
+      }
+    }
+
+    function addConstraintOption(parent, c) {
+      var opt = document.createElement('option');
+      opt.value = c.id;
+      var label = c.title || c.id;
+      if (label.length > 90) label = label.substring(0, 87) + '...';
+      if (c.domain && c.domain !== domain) label += ' [' + c.domain + ']';
+      opt.textContent = label;
+      parent.appendChild(opt);
+    }
+
+    if (sameDomain.length > 0) {
+      var group = document.createElement('optgroup');
+      group.label = domain;
+      for (var i = 0; i < sameDomain.length; i++) addConstraintOption(group, sameDomain[i]);
+      select.appendChild(group);
+    }
+    if (otherDomain.length > 0) {
+      var group = document.createElement('optgroup');
+      group.label = 'Other domains';
+      for (var i = 0; i < otherDomain.length; i++) addConstraintOption(group, otherDomain[i]);
+      select.appendChild(group);
+    }
+
+    container.innerHTML = '';
+    container.appendChild(select);
+
+    var choices = new Choices(select, {
+      searchEnabled: true,
+      shouldSort: false,
+      itemSelectText: '',
+      searchPlaceholderValue: 'Search constraints...',
+    });
+
+    select.addEventListener('change', async function() {
+      var constraintId = select.value;
+      if (!constraintId) return;
+      choices.destroy();
+      container.innerHTML = '<span class="text-muted text-xs">Linking...</span>';
+      try {
+        var res = await fetch('/api/rejection/' + encodeURIComponent(rejectionId) + '/link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ constraint_id: constraintId })
+        });
+        var data = await res.json();
+        if (!res.ok) { alert(data.error || 'Link failed'); }
+        openRejection(rejectionId);
+        refresh();
+      } catch(err) { alert(err.message); openRejection(rejectionId); }
+    });
+
+    select.addEventListener('hideDropdown', function() {
+      setTimeout(function() {
+        if (container.querySelector('.choices') && !container.querySelector('.choices.is-open')) {
+          choices.destroy();
+          container.innerHTML = '<button onclick="linkRejection(\\'' + esc(rejectionId) + '\\', \\'' + esc(domain) + '\\')" class="text-accent border border-accent/30 bg-glow-accent rounded-md text-[11px] px-3 py-1.5 cursor-pointer hover:bg-accent hover:text-surface transition-colors">Link to Constraint</button>';
+        }
+      }, 200);
+    });
+
+    choices.showDropdown();
+  } catch(err) {
+    container.innerHTML = '<span class="text-red text-xs">Error: ' + esc(err.message) + '</span>';
+  }
+}
+
 async function deleteConstraint(constraintId) {
   if (!confirm('Permanently delete this constraint? This cannot be undone.')) return;
   try {
     var res = await fetch('/api/constraint/' + encodeURIComponent(constraintId), { method: 'DELETE' });
+    var data = await res.json();
+    if (!res.ok) { alert(data.error || 'Unknown error'); return; }
+    closeModal();
+    refresh();
+  } catch(err) { alert(err.message); }
+}
+
+async function deleteRejection(rejectionId) {
+  if (!confirm('Permanently delete this rejection? This cannot be undone.')) return;
+  try {
+    var res = await fetch('/api/rejection/' + encodeURIComponent(rejectionId), { method: 'DELETE' });
     var data = await res.json();
     if (!res.ok) { alert(data.error || 'Unknown error'); return; }
     closeModal();
@@ -610,13 +866,23 @@ async function openRejection(id) {
     if (r.constraint_id) {
       html += '<div class="wh-modal-field"><div class="wh-field-label">Encoded By</div><div class="wh-field-value flex items-center gap-3"><a href="#" onclick="event.preventDefault();openConstraint(\\'' + esc(r.constraint_id) + '\\')" class="text-accent no-underline font-mono text-xs">' + esc(r.constraint_id) + ' \\u2192 View constraint</a><button onclick="unlinkRejection(\\'' + esc(r.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[11px] px-3 py-1.5 cursor-pointer hover:bg-red hover:text-surface transition-colors">Unlink</button></div></div>';
     } else {
-      html += modalField('Encoded By', 'Not yet encoded', { showEmpty: true });
+      html += '<div class="wh-modal-field"><div class="wh-field-label">Encoded By</div><div class="wh-field-value" id="link-target-' + esc(r.id) + '"><button onclick="linkRejection(\\'' + esc(r.id) + '\\', \\'' + esc(r.domain) + '\\')" class="text-accent border border-accent/30 bg-glow-accent rounded-md text-[11px] px-3 py-1.5 cursor-pointer hover:bg-accent hover:text-surface transition-colors">Link to Constraint</button></div></div>';
     }
     html += '<hr class="border-none border-t border-edge-subtle">';
     html += modalField('ID', r.id, { mono: true });
     html += modalField('Created', formatDate(r.created_at), { mono: true });
+    if (!r.constraint_id) {
+      html += '<div class="text-center py-4 border-t border-edge-subtle">';
+      html += '<button onclick="deleteRejection(\\'' + esc(r.id) + '\\')" class="text-red border border-red/30 bg-glow-red rounded-md text-[13px] py-3 px-5 cursor-pointer hover:bg-red hover:text-surface transition-colors font-medium">Delete Rejection</button>';
+      html += '<div class="text-[11px] text-muted mt-2">Not linked to any constraint \\u2014 safe to delete</div>';
+      html += '</div>';
+    }
     html += '</div>';
     content.innerHTML = html;
+    requestAnimationFrame(function() {
+      var first = content.querySelector('.wh-field-editable[tabindex]');
+      if (first) first.focus();
+    });
   } catch(err) {
     content.innerHTML = '<div class="p-6"><div class="wh-empty">Error: ' + esc(err.message) + '</div></div>';
   }
@@ -688,6 +954,10 @@ async function openConstraint(id) {
     }
     html += '</div>';
     content.innerHTML = html;
+    requestAnimationFrame(function() {
+      var first = content.querySelector('.wh-field-editable[tabindex]');
+      if (first) first.focus();
+    });
   } catch(err) {
     content.innerHTML = '<div class="p-6"><div class="wh-empty">Error: ' + esc(err.message) + '</div></div>';
   }

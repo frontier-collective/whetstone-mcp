@@ -86,6 +86,13 @@ export const CUSTOM_CSS = `
    Do NOT add unlayered resets here — they override Tailwind's
    @layer utilities due to cascade layer precedence. */
 
+.wh-logo-icon {
+  width: 36px;
+  height: 28px;
+  color: #F59E0B;
+  flex-shrink: 0;
+}
+
 body {
   margin: 0;
   background: radial-gradient(ellipse at top, #111820 0%, var(--color-surface) 60%);
@@ -145,6 +152,18 @@ body {
 .wh-stat-delta {
   @apply text-[11px] font-mono mt-2;
 }
+.wh-stat-clickable {
+  @apply cursor-pointer;
+}
+.wh-stat-clickable:hover {
+  @apply border-accent bg-card-hover scale-[1.03];
+}
+.wh-stat-clickable:active {
+  @apply scale-[0.98];
+}
+.wh-stat-active {
+  @apply border-accent bg-glow-accent;
+}
 
 /* ── Card ── */
 
@@ -186,12 +205,21 @@ body {
 /* ── Badge ── */
 
 .wh-badge {
-  @apply inline-block text-[11px] font-mono font-medium px-2 py-px rounded-md
+  @apply inline-block text-[11px] font-mono font-medium px-2.5 py-1 rounded-md
          border border-edge text-muted bg-raised;
 }
 .wh-badge-critical { @apply border-red/30 text-red bg-glow-red; }
 .wh-badge-important { @apply border-yellow/30 text-yellow bg-glow-yellow; }
 .wh-badge-preference { @apply border-purple/30 text-purple bg-glow-purple; }
+.wh-badge-domain {
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+.wh-badge-domain:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-glow-accent);
+}
 
 /* ── Tag ── */
 
@@ -264,6 +292,12 @@ body {
 }
 .wh-field-editable:hover {
   @apply border-edge-hover bg-raised/50;
+}
+.wh-field-editable:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 6%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent) 20%, transparent);
 }
 .wh-field-saved {
   @apply bg-green/10;
@@ -344,6 +378,56 @@ textarea.wh-inline-edit-code {
   transition: width 0.4s ease;
 }
 
+/* ── Clickable bar segments ── */
+
+.bar-segment-click {
+  cursor: pointer;
+  transition: opacity 0.15s, filter 0.15s;
+}
+.bar-segment-click:hover {
+  opacity: 0.8;
+  filter: brightness(1.3);
+}
+
+.bar-row-click {
+  cursor: pointer;
+  transition: background-color 0.15s;
+  border-radius: 6px;
+  padding: 4px 0;
+  margin: -4px 0;
+}
+.bar-row-click:hover {
+  background-color: var(--color-raised);
+}
+
+/* ── Domain bar tooltip ── */
+
+.bar-tooltip {
+  position: absolute;
+  z-index: 50;
+  background: var(--color-card);
+  border: 1px solid var(--color-edge);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-family: monospace;
+  color: var(--color-primary);
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.bar-tooltip.visible { opacity: 1; }
+
+/* ── Active domain highlight ── */
+
+.domain-bar-active {
+  box-shadow: inset 3px 0 0 var(--color-accent);
+  background: var(--color-glow-accent);
+  border-radius: 0 6px 6px 0;
+}
+
 details summary { list-style: none; }
 details summary::before {
   content: '\\25B6';
@@ -365,7 +449,7 @@ details[open] summary::before { transform: rotate(90deg); }
   vertical-align: middle;
 }
 .bar-legend .legend-encoded::before { background: var(--color-green); }
-.bar-legend .legend-unencoded::before { background: var(--color-accent); }
+.bar-legend .legend-unencoded::before { background: var(--color-orange); }
 
 .pattern-examples div::before {
   content: '\\2022 ';

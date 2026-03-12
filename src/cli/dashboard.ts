@@ -1,6 +1,7 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "http";
-import { exec } from "child_process";
-import { platform } from "os";
+import { resolve, dirname } from "path";
+import { watch, type FSWatcher } from "fs";
+import { WebSocketServer, WebSocket } from "ws";
 import { getDashboardHtml } from "./dashboard/index.js";
 
 const DEFAULT_PORT = 1337;
@@ -40,13 +41,6 @@ function sendHtml(res: ServerResponse, html: string): void {
   res.end(html);
 }
 
-function openBrowser(url: string): void {
-  const cmd = platform() === "darwin" ? "open"
-    : platform() === "win32" ? "start"
-    : "xdg-open";
-  exec(`${cmd} ${url}`);
-}
-
 export async function runDashboard(args: string[]): Promise<void> {
   const flags = parseArgs(args);
   const port = flags.has("port") ? parseInt(flags.get("port")!, 10) : DEFAULT_PORT;
@@ -84,7 +78,7 @@ export async function runDashboard(args: string[]): Promise<void> {
     }
 
     try {
-      if (path === "/" || path === "") {
+      if (path === "/" || path === "" || path === "/rejections" || path === "/constraints") {
         sendHtml(res, html);
       } else if (path === "/api/stats") {
         sendJson(res, 200, stats());
@@ -191,6 +185,26 @@ export async function runDashboard(args: string[]): Promise<void> {
           db.prepare("UPDATE rejections SET constraint_id = NULL WHERE id = ?").run(id);
           checkpoint();
           sendJson(res, 200, { success: true, rejection_id: id });
+        } else if (parts[1] === "link" && method === "POST") {
+          const body = JSON.parse(await readBody(req));
+          if (!body.constraint_id) { sendJson(res, 400, { error: "Missing constraint_id" }); return; }
+          const rejection = db.prepare("SELECT id, constraint_id FROM rejections WHERE id = ?").get(id) as { id: string; constraint_id: string | null } | undefined;
+          if (!rejection) { sendJson(res, 404, { error: "Rejection not found" }); return; }
+          const constraint = db.prepare("SELECT id FROM constraints WHERE id = ?").get(body.constraint_id) as { id: string } | undefined;
+          if (!constraint) { sendJson(res, 404, { error: "Constraint not found" }); return; }
+          db.prepare("UPDATE rejections SET constraint_id = ? WHERE id = ?").run(body.constraint_id, id);
+          checkpoint();
+          sendJson(res, 200, { success: true, rejection_id: id, constraint_id: body.constraint_id });
+        } else if (method === "DELETE" && !parts[1]) {
+          const rejection = db.prepare("SELECT id, constraint_id FROM rejections WHERE id = ?").get(id) as { id: string; constraint_id: string | null } | undefined;
+          if (!rejection) { sendJson(res, 404, { error: "Rejection not found" }); return; }
+          if (rejection.constraint_id) {
+            sendJson(res, 400, { error: "Cannot delete a rejection that is linked to a constraint. Unlink it first." });
+            return;
+          }
+          db.prepare("DELETE FROM rejections WHERE id = ?").run(id);
+          checkpoint();
+          sendJson(res, 200, { success: true, rejection_id: id });
         } else if (method === "PATCH" && !parts[1]) {
           const rejection = db.prepare("SELECT id FROM rejections WHERE id = ?").get(id) as { id: string } | undefined;
           if (!rejection) { sendJson(res, 404, { error: "Rejection not found" }); return; }
@@ -267,6 +281,50 @@ export async function runDashboard(args: string[]): Promise<void> {
     }
   });
 
+  // WebSocket server for real-time updates
+  const wss = new WebSocketServer({ noServer: true });
+  const clients = new Set<WebSocket>();
+
+  wss.on("connection", (ws) => {
+    clients.add(ws);
+    ws.on("close", () => clients.delete(ws));
+    ws.on("error", () => clients.delete(ws));
+  });
+
+  server.on("upgrade", (req, socket, head) => {
+    if (req.url === "/ws") {
+      wss.handleUpgrade(req, socket, head, (ws) => wss.emit("connection", ws, req));
+    } else {
+      socket.destroy();
+    }
+  });
+
+  function broadcast() {
+    // Close the cached connection so the next API request opens a fresh one
+    // that sees external writes (WAL snapshot advances on new connection)
+    closeDb();
+    const msg = JSON.stringify({ type: "refresh" });
+    for (const ws of clients) {
+      if (ws.readyState === WebSocket.OPEN) ws.send(msg);
+    }
+  }
+
+  // Watch the .whetstone/.signal file for changes.
+  // Every write operation (CLI, MCP, dashboard API) touches this file,
+  // giving us a reliable cross-process notification without fighting
+  // SQLite's WAL caching or filesystem mtime quirks.
+  const dbPath = resolve(process.env.WHETSTONE_DB || ".whetstone/whetstone.db");
+  const signalPath = resolve(dirname(dbPath), ".signal");
+  let signalDebounce: ReturnType<typeof setTimeout> | null = null;
+  let signalWatcher: FSWatcher | null = null;
+  try {
+    signalWatcher = watch(signalPath, () => {
+      if (signalDebounce) clearTimeout(signalDebounce);
+      signalDebounce = setTimeout(broadcast, 100);
+    });
+    signalWatcher.on("error", () => {});
+  } catch { /* signal file may not exist yet */ }
+
   server.on("error", (err: NodeJS.ErrnoException) => {
     if (err.code === "EADDRINUSE") {
       console.error(`Error: port ${port} is already in use. Try: whetstone dashboard --port <number>`);
@@ -277,13 +335,24 @@ export async function runDashboard(args: string[]): Promise<void> {
 
   server.listen(port, () => {
     const url = `http://localhost:${port}`;
-    console.error(`\n  whetstone dashboard running at ${url}`);
-    console.error("  Press Ctrl+C to stop.\n");
-    openBrowser(url);
+    const dbDisplay = process.env.WHETSTONE_DB || ".whetstone/whetstone.db";
+    console.error("");
+    console.error("  \x1b[1m\x1b[33m⬡ Whetstone Dashboard\x1b[0m");
+    console.error("");
+    console.error(`  \x1b[2mURL:\x1b[0m      \x1b[36m${url}\x1b[0m`);
+    console.error(`  \x1b[2mDB:\x1b[0m       ${dbDisplay}`);
+    console.error(`  \x1b[2mPort:\x1b[0m     ${port}`);
+    console.error("");
+    console.error("  \x1b[2mPress Ctrl+C to stop.\x1b[0m");
+    console.error("");
   });
 
   process.on("SIGINT", () => {
     console.error("\n  Shutting down...");
+    if (signalWatcher) signalWatcher.close();
+    if (signalDebounce) clearTimeout(signalDebounce);
+    for (const ws of clients) ws.close();
+    wss.close();
     server.close();
     closeDb();
     process.exit(0);
